@@ -3,7 +3,8 @@ export enum UserRole {
   MASTER = 'master_admin',
   ADMIN = 'tenant_admin',
   RH = 'hr_user',
-  FINANCE = 'finance_user'
+  FINANCE = 'finance_user',
+  SALES = 'sales_user'
 }
 
 

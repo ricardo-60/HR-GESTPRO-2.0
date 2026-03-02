@@ -11,18 +11,19 @@ interface NavItem {
   id: string;
 }
 
-export const Sidebar: React.FC<{ 
-  isOpen: boolean; 
+export const Sidebar: React.FC<{
+  isOpen: boolean;
   onNavigate: (path: string) => void;
   currentPath: string;
 }> = ({ isOpen, onNavigate, currentPath }) => {
   const { role, tenantStatus, signOut } = useAuth();
 
   const NAV_ITEMS: NavItem[] = [
-    { id: 'dash', label: 'Visão Geral', icon: 'fa-chart-pie', roles: [UserRole.MASTER, UserRole.ADMIN, UserRole.RH, UserRole.FINANCE], path: 'dashboard' },
+    { id: 'dash', label: 'Visão Geral', icon: 'fa-chart-pie', roles: [UserRole.MASTER, UserRole.ADMIN, UserRole.RH, UserRole.FINANCE, UserRole.SALES], path: 'dashboard' },
+    { id: 'sales', label: 'Vendas', icon: 'fa-shopping-cart', roles: [UserRole.MASTER, UserRole.ADMIN, UserRole.SALES], path: 'sales' },
     { id: 'companies', label: 'Empresas', icon: 'fa-building', roles: [UserRole.MASTER, UserRole.ADMIN], path: 'companies' },
     { id: 'users', label: 'Utilizadores', icon: 'fa-user-shield', roles: [UserRole.MASTER, UserRole.ADMIN], path: 'users' },
-    { id: 'rh', label: 'Colaboradores', icon: 'fa-users', roles: [UserRole.MASTER, UserRole.ADMIN, UserRole.RH], path: 'rh' },
+    { id: 'rh', label: 'Recursos Humanos', icon: 'fa-users', roles: [UserRole.MASTER, UserRole.ADMIN, UserRole.RH], path: 'rh' },
     { id: 'fin', label: 'Faturação', icon: 'fa-file-invoice-dollar', roles: [UserRole.MASTER, UserRole.ADMIN, UserRole.FINANCE], path: 'finance' },
     { id: 'cfg', label: 'Configurações', icon: 'fa-cog', roles: [UserRole.MASTER, UserRole.ADMIN], path: 'settings' },
   ];
@@ -40,14 +41,13 @@ export const Sidebar: React.FC<{
 
       <nav className="flex-1 mt-6 px-3 space-y-1 overflow-y-auto custom-scrollbar">
         {filteredItems.map((item) => (
-          <button 
+          <button
             key={item.id}
             onClick={() => onNavigate(item.path)}
-            className={`flex items-center space-x-3 w-full p-3 rounded-xl cursor-pointer transition-all group ${
-              currentPath === item.path 
-                ? 'bg-indigo-600 text-white' 
+            className={`flex items-center space-x-3 w-full p-3 rounded-xl cursor-pointer transition-all group ${currentPath === item.path
+                ? 'bg-indigo-600 text-white'
                 : 'hover:bg-slate-800 text-slate-400 hover:text-white'
-            }`}
+              }`}
           >
             <i className={`fas ${item.icon} w-5 text-center group-hover:scale-110 transition-transform`}></i>
             {isOpen && <span className="text-sm font-semibold whitespace-nowrap">{item.label}</span>}
@@ -62,7 +62,7 @@ export const Sidebar: React.FC<{
             <p className="text-xs text-indigo-400 font-bold truncate">{tenantStatus?.company_name || 'HR-GESTPRO'}</p>
           </div>
         )}
-        <button 
+        <button
           onClick={() => signOut()}
           className={`flex items-center space-x-3 w-full p-3 rounded-xl text-rose-400 hover:bg-rose-500/10 transition-colors ${!isOpen && 'justify-center'}`}
         >

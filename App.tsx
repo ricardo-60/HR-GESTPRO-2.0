@@ -7,6 +7,8 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import UserManagement from './pages/UserManagement';
 import CompanyManagement from './pages/CompanyManagement';
+import SalesManagement from './pages/SalesManagement';
+import HRManagement from './pages/HRManagement';
 import Layout from './components/Layout';
 
 /**
@@ -21,7 +23,7 @@ const MainRouter: React.FC = () => {
     if (currentPath === 'users' && (role === UserRole.ADMIN || role === UserRole.MASTER)) {
       return <UserManagement />;
     }
-    
+
     if (currentPath === 'companies' && (role === UserRole.ADMIN || role === UserRole.MASTER)) {
       return <CompanyManagement />;
     }
@@ -31,9 +33,12 @@ const MainRouter: React.FC = () => {
         if (role === UserRole.MASTER) return <Dashboard variant="master" />;
         if (role === UserRole.RH) return <Dashboard variant="rh" />;
         if (role === UserRole.FINANCE) return <Dashboard variant="finance" />;
+        if (role === UserRole.SALES) return <SalesManagement />;
         return <Dashboard variant="admin" />;
       case 'rh':
-        return <Dashboard variant="rh" />;
+        return <HRManagement />;
+      case 'sales':
+        return <SalesManagement />;
       case 'finance':
         return <Dashboard variant="finance" />;
       case 'settings':
@@ -66,7 +71,7 @@ const AppContent: React.FC = () => {
           <p className="text-slate-400 mb-8 text-sm leading-relaxed">
             Credenciais de API não detetadas ou inválidas. Verifique os dados abaixo:
           </p>
-          
+
           <div className="space-y-3">
             <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-left">
               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">URL Detetada</p>
@@ -79,7 +84,7 @@ const AppContent: React.FC = () => {
               </p>
             </div>
           </div>
-          
+
           <p className="mt-8 text-[10px] text-slate-500 uppercase font-black tracking-widest">Aguardando Configuração</p>
         </div>
       </div>
@@ -93,7 +98,7 @@ const AppContent: React.FC = () => {
         <div className="mt-10 text-center">
           <p className="text-slate-400 font-black uppercase text-[10px] tracking-[0.4em] mb-4">HR-GESTPRO PROD</p>
           <div className="bg-slate-50 px-4 py-2 rounded-lg border border-slate-100 inline-block">
-             <p className="text-[9px] text-slate-400 font-mono">Endpoint: {SUPABASE_URL}</p>
+            <p className="text-[9px] text-slate-400 font-mono">Endpoint: {SUPABASE_URL}</p>
           </div>
         </div>
       </div>
@@ -133,7 +138,14 @@ const AppContent: React.FC = () => {
           <i className="fas fa-fingerprint text-2xl"></i>
         </div>
         <h2 className="text-xl font-black text-slate-900 mb-2">A Sincronizar...</h2>
-        <p className="text-slate-500 text-sm max-w-xs leading-relaxed">Estamos a preparar o seu ambiente de trabalho multitenant.</p>
+        <p className="text-slate-500 text-sm max-w-xs leading-relaxed mb-8">Estamos a preparar o seu ambiente de trabalho multitenant.</p>
+
+        <button
+          onClick={() => signOut()}
+          className="text-gray-400 hover:text-indigo-600 font-bold text-[10px] uppercase tracking-widest transition-colors"
+        >
+          Sair da Conta e Tentar Novamente
+        </button>
       </div>
     );
   }

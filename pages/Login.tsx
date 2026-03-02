@@ -12,15 +12,27 @@ const Login: React.FC = () => {
   const [recoverySent, setRecoverySent] = useState(false);
   const [showDebug, setShowDebug] = useState(false);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const [isLoginMode, setIsLoginMode] = useState(true);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setSuccessMessage(null);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
+      if (isLoginMode) {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.auth.signUp({ email, password });
+        if (error) throw error;
+        setSuccessMessage('Registo efetuado com sucesso! Verifique a sua caixa de entrada.');
+        // Opcional: alternar de volta para login após registo
+        // setIsLoginMode(true);
+      }
     } catch (err: any) {
-      setError(err.message || 'Erro ao realizar login. Verifique as credenciais.');
+      setError(err.message || (isLoginMode ? 'Erro ao realizar login.' : 'Erro ao realizar o registo.'));
     } finally {
       setLoading(false);
     }
@@ -30,6 +42,7 @@ const Login: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setSuccessMessage(null);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(recoveryEmail, {
         redirectTo: window.location.origin,
@@ -48,10 +61,10 @@ const Login: React.FC = () => {
       <div className="max-w-md w-full bg-white rounded-[2.5rem] shadow-2xl p-10 border border-gray-100 relative overflow-hidden">
         {/* Decorative Element */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-bl-full -mr-16 -mt-16 opacity-50"></div>
-        
+
         <div className="text-center mb-10 relative">
           <h1 className="text-4xl font-black text-indigo-600 mb-2 tracking-tighter italic">HR-GESTPRO-2.0</h1>
-          <p className="text-gray-400 font-bold uppercase text-[10px] tracking-[0.3em]">Enterprise Access</p>
+          <p className="text-gray-400 font-bold uppercase text-[10px] tracking-[0.3em]">{showRecovery ? 'Recuperação de Acesso' : (isLoginMode ? 'Enterprise Access' : 'Create Account')}</p>
         </div>
 
         {showRecovery ? (
@@ -69,7 +82,7 @@ const Login: React.FC = () => {
             </div>
           ) : (
             <form onSubmit={handleRecovery} className="space-y-6">
-               <div>
+              <div>
                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">E-mail de Recuperação</label>
                 <input
                   type="email"
@@ -89,8 +102,8 @@ const Login: React.FC = () => {
             </form>
           )
         ) : (
-          /* Login Form */
-          <form onSubmit={handleLogin} className="space-y-6">
+          /* Auth Form (Login or Signup) */
+          <form onSubmit={handleAuth} className="space-y-6">
             <div>
               <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Credencial de E-mail</label>
               <div className="relative">
@@ -111,9 +124,11 @@ const Login: React.FC = () => {
             <div>
               <div className="flex justify-between items-center mb-2">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Senha de Acesso</label>
-                <button type="button" onClick={() => setShowRecovery(true)} className="text-[9px] font-black text-indigo-500 uppercase tracking-widest hover:text-indigo-700">
-                  Esqueci-me
-                </button>
+                {isLoginMode && (
+                  <button type="button" onClick={() => setShowRecovery(true)} className="text-[9px] font-black text-indigo-500 uppercase tracking-widest hover:text-indigo-700">
+                    Esqueci-me
+                  </button>
+                )}
               </div>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-5 flex items-center text-gray-300">
@@ -126,14 +141,25 @@ const Login: React.FC = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full pl-12 pr-5 py-4 rounded-2xl bg-gray-50 border-0 focus:ring-2 focus:ring-indigo-500 transition outline-none font-medium"
                   placeholder="••••••••"
+                  minLength={isLoginMode ? undefined : 6}
                 />
               </div>
+              {!isLoginMode && (
+                <p className="text-[9px] text-gray-400 mt-2 font-medium">A senha deve ter pelo menos 6 caracteres.</p>
+              )}
             </div>
 
             {error && (
               <div className="bg-rose-50 text-rose-600 p-4 rounded-2xl text-xs font-bold border border-rose-100 flex items-center">
-                <i className="fas fa-circle-exclamation mr-3 text-lg"></i> 
+                <i className="fas fa-circle-exclamation mr-3 text-lg"></i>
                 <span>{error}</span>
+              </div>
+            )}
+
+            {successMessage && (
+              <div className="bg-emerald-50 text-emerald-600 p-4 rounded-2xl text-xs font-bold border border-emerald-100 flex items-center">
+                <i className="fas fa-check-circle mr-3 text-lg"></i>
+                <span>{successMessage}</span>
               </div>
             )}
 
@@ -143,11 +169,26 @@ const Login: React.FC = () => {
               className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-black shadow-xl shadow-slate-200 transition-all flex items-center justify-center space-x-2"
             >
               {loading ? (
-                <><i className="fas fa-circle-notch fa-spin"></i> <span>Validando...</span></>
+                <><i className="fas fa-circle-notch fa-spin"></i> <span>A Processar...</span></>
               ) : (
-                <><span>Entrar no Sistema</span> <i className="fas fa-arrow-right"></i></>
+                <><span>{isLoginMode ? 'Entrar no Sistema' : 'Criar Conta'}</span> <i className={`fas ${isLoginMode ? 'fa-arrow-right' : 'fa-user-plus'}`}></i></>
               )}
             </button>
+
+            <div className="text-center mt-6">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsLoginMode(!isLoginMode);
+                  setError(null);
+                  setSuccessMessage(null);
+                }}
+                className="text-[11px] font-bold text-gray-500 hover:text-indigo-600 transition-colors"
+                disabled={loading}
+              >
+                {isLoginMode ? 'Não tem conta? Registar-se' : 'Já tem conta? Iniciar Sessão'}
+              </button>
+            </div>
           </form>
         )}
 
@@ -160,13 +201,13 @@ const Login: React.FC = () => {
 
       {/* Diagnostic Helper Section */}
       <div className="mt-8 max-w-md w-full">
-        <button 
+        <button
           onClick={() => setShowDebug(!showDebug)}
           className="w-full py-3 px-6 rounded-2xl border border-dashed border-gray-200 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] hover:bg-white hover:text-indigo-500 transition-all"
         >
           {showDebug ? 'Ocultar Diagnóstico' : 'Verificar Variáveis de Conexão'}
         </button>
-        
+
         {showDebug && (
           <div className="mt-4 p-6 bg-white rounded-3xl border border-gray-100 shadow-xl animate-in fade-in slide-in-from-top-2 duration-300">
             <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-widest mb-4 flex items-center">
