@@ -24,10 +24,10 @@ const SalesManagement: React.FC = () => {
                     <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-50 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110"></div>
                     <div className="relative">
                         <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center text-xl mb-4">
-                            <i className="fas fa-euro-sign"></i>
+                            <i className="fas fa-money-bill-wave"></i>
                         </div>
                         <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-1">Vendas Hoje</p>
-                        <p className="text-3xl font-black text-slate-800 tracking-tighter">€ 2.450,00</p>
+                        <p className="text-3xl font-black text-slate-800 tracking-tighter">KZ 2.450,00</p>
                     </div>
                 </div>
 
@@ -75,7 +75,7 @@ const SalesManagement: React.FC = () => {
                                 <td className="px-8 py-5 font-mono text-xs text-slate-500">FT-2023/1042</td>
                                 <td className="px-8 py-5 font-bold text-slate-700">Tech Solutions Lda.</td>
                                 <td className="px-8 py-5 text-slate-500 text-xs">Hoje, 14:30</td>
-                                <td className="px-8 py-5 font-bold text-slate-800">€ 1.250,00</td>
+                                <td className="px-8 py-5 font-bold text-slate-800">KZ 1.250,00</td>
                                 <td className="px-8 py-5">
                                     <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">Pago</span>
                                 </td>
@@ -84,7 +84,7 @@ const SalesManagement: React.FC = () => {
                                 <td className="px-8 py-5 font-mono text-xs text-slate-500">FT-2023/1041</td>
                                 <td className="px-8 py-5 font-bold text-slate-700">Restaurante O Mar</td>
                                 <td className="px-8 py-5 text-slate-500 text-xs">Hoje, 11:15</td>
-                                <td className="px-8 py-5 font-bold text-slate-800">€ 320,50</td>
+                                <td className="px-8 py-5 font-bold text-slate-800">KZ 320,50</td>
                                 <td className="px-8 py-5">
                                     <span className="bg-amber-50 text-amber-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">Pendente</span>
                                 </td>
@@ -93,7 +93,7 @@ const SalesManagement: React.FC = () => {
                                 <td className="px-8 py-5 font-mono text-xs text-slate-500">FT-2023/1040</td>
                                 <td className="px-8 py-5 font-bold text-slate-700">Dna. Maria Silva</td>
                                 <td className="px-8 py-5 text-slate-500 text-xs">Ontem, 16:45</td>
-                                <td className="px-8 py-5 font-bold text-slate-800">€ 85,00</td>
+                                <td className="px-8 py-5 font-bold text-slate-800">KZ 85,00</td>
                                 <td className="px-8 py-5">
                                     <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">Pago</span>
                                 </td>

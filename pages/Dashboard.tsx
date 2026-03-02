@@ -28,7 +28,7 @@ const Dashboard: React.FC<DashboardProps> = ({ variant }) => {
   const { tenantStatus, user } = useAuth();
 
   const getDashboardData = () => {
-    switch(variant) {
+    switch (variant) {
       case 'master':
         return {
           title: 'Master Console',
@@ -36,7 +36,7 @@ const Dashboard: React.FC<DashboardProps> = ({ variant }) => {
           stats: [
             { title: 'Total Tenants', value: '1,248', icon: 'fa-building', color: 'bg-slate-900', trend: '+12%' },
             { title: 'API Uptime', value: '99.99%', icon: 'fa-microchip', color: 'bg-indigo-600' },
-            { title: 'Annual Recurring', value: '2.4M €', icon: 'fa-chart-line', color: 'bg-purple-600', trend: '+18%' },
+            { title: 'Annual Recurring', value: '2.4M KZ', icon: 'fa-chart-line', color: 'bg-purple-600', trend: '+18%' },
             { title: 'System Health', value: 'Optimal', icon: 'fa-heartbeat', color: 'bg-emerald-500' }
           ]
         };
@@ -56,10 +56,10 @@ const Dashboard: React.FC<DashboardProps> = ({ variant }) => {
           title: 'Finance & Billing',
           subtitle: `Entity: ${tenantStatus?.company_name || 'Organization'}`,
           stats: [
-            { title: 'Monthly Revenue', value: '84.500 €', icon: 'fa-euro-sign', color: 'bg-emerald-600', trend: '+5.4%' },
-            { title: 'Invoices Due', value: '12.300 €', icon: 'fa-file-invoice', color: 'bg-rose-500' },
-            { title: 'Available Cash', value: '42.000 €', icon: 'fa-wallet', color: 'bg-indigo-500' },
-            { title: 'Tax Provision', value: '18.250 €', icon: 'fa-landmark', color: 'bg-slate-700' }
+            { title: 'Monthly Revenue', value: '84.500 KZ', icon: 'fa-money-bill-wave', color: 'bg-emerald-600', trend: '+5.4%' },
+            { title: 'Invoices Due', value: '12.300 KZ', icon: 'fa-file-invoice', color: 'bg-rose-500' },
+            { title: 'Available Cash', value: '42.000 KZ', icon: 'fa-wallet', color: 'bg-indigo-500' },
+            { title: 'Tax Provision', value: '18.250 KZ', icon: 'fa-landmark', color: 'bg-slate-700' }
           ]
         };
       default:
@@ -132,7 +132,7 @@ const Dashboard: React.FC<DashboardProps> = ({ variant }) => {
 
         <div className="bg-slate-900 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden flex flex-col justify-between">
           <div className="absolute -right-16 -bottom-16 w-64 h-64 bg-indigo-500/10 rounded-full blur-[100px]"></div>
-          
+
           <div>
             <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center mb-8">
               <i className="fas fa-fingerprint text-xl text-indigo-400"></i>
@@ -142,13 +142,13 @@ const Dashboard: React.FC<DashboardProps> = ({ variant }) => {
           </div>
 
           <div className="space-y-4">
-             <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Last Login IP</p>
-                <p className="text-xs font-mono text-indigo-300">192.168.1.104 (Portugal)</p>
-             </div>
-             <button className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-indigo-900/50">
-               Audit Logs
-             </button>
+            <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Last Login IP</p>
+              <p className="text-xs font-mono text-indigo-300">192.168.1.104 (Portugal)</p>
+            </div>
+            <button className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-indigo-900/50">
+              Audit Logs
+            </button>
           </div>
         </div>
       </div>
