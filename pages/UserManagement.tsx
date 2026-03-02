@@ -209,7 +209,7 @@ const UserManagement: React.FC = () => {
                             : 'text-rose-600 hover:bg-rose-50'
                           }`}
                       >
-                        {u.is_active === false ? 'Reativar' : 'Deativar'}
+                        {u.is_active === false ? 'Reativar' : 'Desativar'}
                       </button>
                     </td>
                   </tr>
