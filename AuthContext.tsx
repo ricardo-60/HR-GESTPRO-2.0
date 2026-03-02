@@ -22,28 +22,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .maybeSingle(); // Better than .single() for new users without profile
 
       if (pErr) throw pErr;
-      
+
       if (!pData) {
         console.warn('AuthContext: No profile found for user', userId);
         setProfile(null);
         return;
       }
-      
+
       setProfile(pData);
 
       // 2. Fetch Multi-tenant License Status
       if (pData?.tenant_id) {
         const { data: tData, error: tErr } = await supabase
-          .from('v_tenant_status')
-          .select('*')
-          .eq('tenant_id', pData.tenant_id)
+          .from('tenants')
+          .select('id, company_name, status, trial_end_date')
+          .eq('id', pData.tenant_id)
           .maybeSingle();
 
         if (tErr) {
           console.error('License check failed:', tErr);
-          // Fallback to active for development if view doesn't exist yet
         }
-        setTenantStatus(tData);
+
+        if (tData) {
+          let computedStatus = tData.status;
+
+          // Enforce trial expiration
+          if (computedStatus === 'trial' && tData.trial_end_date) {
+            const isExpired = new Date() > new Date(tData.trial_end_date);
+            if (isExpired) computedStatus = 'expired';
+          }
+
+          setTenantStatus({
+            tenant_id: tData.id,
+            company_name: tData.company_name,
+            status: computedStatus,
+            trial_end_date: tData.trial_end_date
+          });
+        } else {
+          setTenantStatus(null);
+        }
       }
     } catch (err) {
       console.error('RBAC Initialization Error:', err);
@@ -104,14 +121,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      profile, 
+    <AuthContext.Provider value={{
+      user,
+      profile,
       role: profile?.role || null,
       tenantId: profile?.tenant_id || null,
-      tenantStatus, 
-      loading, 
-      signOut 
+      tenantStatus,
+      loading,
+      signOut
     }}>
       {children}
     </AuthContext.Provider>

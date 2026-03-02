@@ -10,6 +10,8 @@ import CompanyManagement from './pages/CompanyManagement';
 import SalesManagement from './pages/SalesManagement';
 import HRManagement from './pages/HRManagement';
 import Layout from './components/Layout';
+import ExpiredLicense from './pages/ExpiredLicense';
+import MasterSettings from './pages/MasterSettings';
 
 /**
  * MainRouter: Core SPA Navigation Logic.
@@ -42,6 +44,7 @@ const MainRouter: React.FC = () => {
       case 'finance':
         return <Dashboard variant="finance" />;
       case 'settings':
+        if (role === UserRole.MASTER) return <MasterSettings />;
         return <Dashboard variant="admin" />;
       default:
         return <Dashboard variant="admin" />;
@@ -107,28 +110,8 @@ const AppContent: React.FC = () => {
 
   if (!user) return <Login />;
 
-  if (tenantStatus?.status === TenantStatus.EXPIRED) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
-        <div className="bg-white p-12 rounded-[3rem] shadow-2xl max-w-md w-full text-center">
-          <div className="w-24 h-24 bg-rose-50 text-rose-500 rounded-3xl flex items-center justify-center mx-auto mb-8 text-4xl">
-            <i className="fas fa-credit-card"></i>
-          </div>
-          <h2 className="text-3xl font-black text-slate-900 mb-3 tracking-tight">Licença Expirada</h2>
-          <p className="text-slate-500 mb-10 leading-relaxed">
-            A conta associada a <span className="font-bold text-slate-800">{tenantStatus.company_name}</span> encontra-se suspensa.
-          </p>
-          <div className="space-y-4">
-            <button className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-black transition-all">
-              Renovar Agora
-            </button>
-            <button onClick={() => signOut()} className="w-full text-slate-400 font-bold py-2 hover:text-slate-600 transition-all text-xs tracking-widest uppercase">
-              Sair da Conta
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+  if (tenantStatus?.status === TenantStatus.EXPIRED || tenantStatus?.status === TenantStatus.SUSPENDED) {
+    return <ExpiredLicense />;
   }
 
   if (!profile) {

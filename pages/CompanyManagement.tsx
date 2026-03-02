@@ -19,8 +19,12 @@ const CompanyManagement: React.FC = () => {
     tax_id: '',
     status: TenantStatus.ACTIVE,
     plan_tier: 'Pro',
-    contact_email: ''
+    contact_email: '',
+    address: '',
+    phone: '',
+    logo_url: ''
   });
+  const [logoFile, setLogoFile] = useState<File | null>(null);
 
   const fetchTenants = async () => {
     if (!supabase) return;
@@ -56,7 +60,10 @@ const CompanyManagement: React.FC = () => {
         tax_id: tenant.tax_id,
         status: tenant.status,
         plan_tier: tenant.plan_tier,
-        contact_email: tenant.contact_email || ''
+        contact_email: tenant.contact_email || '',
+        address: tenant.address || '',
+        phone: tenant.phone || '',
+        logo_url: tenant.logo_url || ''
       });
     } else {
       setEditingTenant(null);
@@ -65,10 +72,34 @@ const CompanyManagement: React.FC = () => {
         tax_id: '',
         status: TenantStatus.ACTIVE,
         plan_tier: 'Pro',
-        contact_email: ''
+        contact_email: '',
+        address: '',
+        phone: '',
+        logo_url: ''
       });
     }
+    setLogoFile(null);
     setIsModalOpen(true);
+  };
+
+  const uploadLogo = async (file: File): Promise<string> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random()}.${fileExt}`;
+    const filePath = `${tenantId || 'new'}/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('company_logos')
+      .upload(filePath, file);
+
+    if (uploadError) {
+      throw uploadError;
+    }
+
+    const { data } = supabase.storage
+      .from('company_logos')
+      .getPublicUrl(filePath);
+
+    return data.publicUrl;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -78,16 +109,23 @@ const CompanyManagement: React.FC = () => {
     setError(null);
 
     try {
+      let currentLogoUrl = formData.logo_url;
+      if (logoFile) {
+        currentLogoUrl = await uploadLogo(logoFile);
+      }
+
+      const finalData = { ...formData, logo_url: currentLogoUrl };
+
       if (editingTenant) {
         const { error: err } = await supabase
           .from('tenants')
-          .update(formData)
+          .update(finalData)
           .eq('id', editingTenant.id);
         if (err) throw err;
       } else {
         const { error: err } = await supabase
           .from('tenants')
-          .insert([formData]);
+          .insert([finalData]);
         if (err) throw err;
       }
       setIsModalOpen(false);
@@ -107,7 +145,7 @@ const CompanyManagement: React.FC = () => {
           <p className="text-slate-500 font-medium">Controle de organizações e licenciamento do sistema.</p>
         </div>
         {currentRole === UserRole.MASTER && (
-          <button 
+          <button
             onClick={() => openModal()}
             className="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold text-sm flex items-center shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all"
           >
@@ -154,8 +192,12 @@ const CompanyManagement: React.FC = () => {
                   <tr key={t.id} className="hover:bg-slate-50/50 transition-colors group">
                     <td className="px-8 py-6">
                       <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-black text-lg">
-                          {t.company_name.charAt(0)}
+                        <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-black text-lg overflow-hidden border border-indigo-100">
+                          {t.logo_url ? (
+                            <img src={t.logo_url} alt={t.company_name} className="w-full h-full object-cover" />
+                          ) : (
+                            t.company_name.charAt(0)
+                          )}
                         </div>
                         <div>
                           <p className="font-black text-slate-900 text-sm tracking-tight">{t.company_name}</p>
@@ -170,15 +212,14 @@ const CompanyManagement: React.FC = () => {
                     </td>
                     <td className="px-8 py-6">
                       <div className="flex items-center space-x-2">
-                         <div className={`w-2 h-2 rounded-full ${
-                           t.status === TenantStatus.ACTIVE ? 'bg-emerald-500' : 
-                           t.status === TenantStatus.TRIAL ? 'bg-amber-500' : 'bg-rose-500'
-                         }`}></div>
-                         <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">{t.status}</span>
+                        <div className={`w-2 h-2 rounded-full ${t.status === TenantStatus.ACTIVE ? 'bg-emerald-500' :
+                            t.status === TenantStatus.TRIAL ? 'bg-amber-500' : 'bg-rose-500'
+                          }`}></div>
+                        <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">{t.status}</span>
                       </div>
                     </td>
                     <td className="px-8 py-6 text-right">
-                      <button 
+                      <button
                         onClick={() => openModal(t)}
                         className="text-indigo-600 hover:text-indigo-900 font-bold text-xs uppercase tracking-widest p-2"
                       >
@@ -212,32 +253,32 @@ const CompanyManagement: React.FC = () => {
             <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-6">
               <div className="col-span-2">
                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Nome da Empresa</label>
-                <input 
+                <input
                   required
                   className="w-full px-5 py-4 bg-slate-50 border-0 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-slate-800"
                   value={formData.company_name}
-                  onChange={e => setFormData({...formData, company_name: e.target.value})}
+                  onChange={e => setFormData({ ...formData, company_name: e.target.value })}
                   placeholder="Ex: Tech Solutions Lda"
                 />
               </div>
 
               <div>
                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">NIF / Tax ID</label>
-                <input 
+                <input
                   required
                   className="w-full px-5 py-4 bg-slate-50 border-0 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-mono text-slate-800"
                   value={formData.tax_id}
-                  onChange={e => setFormData({...formData, tax_id: e.target.value})}
+                  onChange={e => setFormData({ ...formData, tax_id: e.target.value })}
                   placeholder="500 000 000"
                 />
               </div>
 
               <div>
                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Plano</label>
-                <select 
+                <select
                   className="w-full px-5 py-4 bg-slate-50 border-0 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-slate-800 appearance-none"
                   value={formData.plan_tier}
-                  onChange={e => setFormData({...formData, plan_tier: e.target.value})}
+                  onChange={e => setFormData({ ...formData, plan_tier: e.target.value })}
                 >
                   <option value="Basic">Basic (5 Colabs)</option>
                   <option value="Pro">Pro (50 Colabs)</option>
@@ -247,10 +288,10 @@ const CompanyManagement: React.FC = () => {
 
               <div>
                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Estado da Conta</label>
-                <select 
+                <select
                   className="w-full px-5 py-4 bg-slate-50 border-0 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-slate-800 appearance-none"
                   value={formData.status}
-                  onChange={e => setFormData({...formData, status: e.target.value as TenantStatus})}
+                  onChange={e => setFormData({ ...formData, status: e.target.value as TenantStatus })}
                 >
                   <option value={TenantStatus.ACTIVE}>Ativo</option>
                   <option value={TenantStatus.TRIAL}>Período de Experiência</option>
@@ -260,13 +301,59 @@ const CompanyManagement: React.FC = () => {
 
               <div>
                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">E-mail de Contacto</label>
-                <input 
+                <input
                   type="email"
                   className="w-full px-5 py-4 bg-slate-50 border-0 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium text-slate-800"
                   value={formData.contact_email}
-                  onChange={e => setFormData({...formData, contact_email: e.target.value})}
+                  onChange={e => setFormData({ ...formData, contact_email: e.target.value })}
                   placeholder="financeiro@empresa.com"
                 />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Telefone</label>
+                <input
+                  type="text"
+                  className="w-full px-5 py-4 bg-slate-50 border-0 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium text-slate-800"
+                  value={formData.phone}
+                  onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                  placeholder="+244 9XX XXX XXX"
+                />
+              </div>
+
+              <div className="col-span-2">
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Morada</label>
+                <input
+                  type="text"
+                  className="w-full px-5 py-4 bg-slate-50 border-0 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium text-slate-800"
+                  value={formData.address}
+                  onChange={e => setFormData({ ...formData, address: e.target.value })}
+                  placeholder="Rua da Empresa, 123, Luanda"
+                />
+              </div>
+
+              <div className="col-span-2">
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Logotipo da Empresa</label>
+                <div className="flex items-center space-x-4">
+                  {formData.logo_url && !logoFile && (
+                    <img src={formData.logo_url} alt="Logo Atual" className="w-16 h-16 rounded-xl object-cover border border-slate-200" />
+                  )}
+                  {logoFile && (
+                    <div className="w-16 h-16 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 font-black text-xs border border-indigo-200">
+                      NOVO
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="w-full px-5 py-3 bg-slate-50 border-0 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none text-slate-500 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200"
+                    onChange={e => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        setLogoFile(e.target.files[0]);
+                      }
+                    }}
+                  />
+                </div>
               </div>
 
               {error && (
@@ -276,14 +363,14 @@ const CompanyManagement: React.FC = () => {
               )}
 
               <div className="col-span-2 flex space-x-4 pt-6">
-                <button 
+                <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
                   className="flex-1 px-6 py-4 rounded-2xl font-bold text-slate-400 hover:bg-slate-50 transition-colors uppercase text-xs tracking-widest"
                 >
                   Cancelar
                 </button>
-                <button 
+                <button
                   disabled={submitting}
                   className="flex-1 px-6 py-4 bg-slate-900 text-white rounded-2xl font-black shadow-2xl shadow-slate-200 hover:bg-black transition-all disabled:opacity-50 uppercase text-xs tracking-widest"
                 >

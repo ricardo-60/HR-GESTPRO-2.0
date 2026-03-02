@@ -17,7 +17,8 @@ const UserManagement: React.FC = () => {
   const [formData, setFormData] = useState({
     email: '',
     full_name: '',
-    role: UserRole.RH as UserRole
+    role: UserRole.RH as UserRole,
+    can_close_sales: false
   });
 
   const fetchUsers = async () => {
@@ -53,7 +54,8 @@ const UserManagement: React.FC = () => {
     setFormData({
       email: user.email || '',
       full_name: user.full_name || '',
-      role: user.role
+      role: user.role,
+      can_close_sales: user.can_close_sales || false
     });
     setIsModalOpen(true);
   };
@@ -61,7 +63,7 @@ const UserManagement: React.FC = () => {
   const closePortal = () => {
     setIsModalOpen(false);
     setEditingUser(null);
-    setFormData({ email: '', full_name: '', role: UserRole.RH });
+    setFormData({ email: '', full_name: '', role: UserRole.RH, can_close_sales: false });
     setError(null);
   };
 
@@ -78,7 +80,8 @@ const UserManagement: React.FC = () => {
           .from('user_profiles')
           .update({
             full_name: formData.full_name,
-            role: formData.role
+            role: formData.role,
+            can_close_sales: formData.can_close_sales
           })
           .eq('id', editingUser.id);
 
@@ -91,7 +94,8 @@ const UserManagement: React.FC = () => {
             email: formData.email,
             full_name: formData.full_name,
             role: formData.role,
-            tenant_id: tenantId
+            tenant_id: tenantId,
+            can_close_sales: formData.can_close_sales
           }]);
 
         if (profileError) throw profileError;
@@ -199,10 +203,10 @@ const UserManagement: React.FC = () => {
                         disabled={u.id === currentUser?.id}
                         onClick={() => toggleUserStatus(u.id, u.is_active ?? true)}
                         className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${u.id === currentUser?.id
-                            ? 'opacity-20 cursor-not-allowed'
-                            : u.is_active === false
-                              ? 'text-emerald-600 hover:bg-emerald-50'
-                              : 'text-rose-600 hover:bg-rose-50'
+                          ? 'opacity-20 cursor-not-allowed'
+                          : u.is_active === false
+                            ? 'text-emerald-600 hover:bg-emerald-50'
+                            : 'text-rose-600 hover:bg-rose-50'
                           }`}
                       >
                         {u.is_active === false ? 'Reativar' : 'Deativar'}
@@ -259,9 +263,27 @@ const UserManagement: React.FC = () => {
                 >
                   <option value={UserRole.RH}>RH - Gestão de Equipa</option>
                   <option value={UserRole.FINANCE}>Financeiro - Contabilidade</option>
-                  <option value={UserRole.ADMIN}>Administrador de Empresa</option>
+                  <option value={UserRole.SALES}>Vendas - Operador Comercial</option>
+                  {(currentRole === UserRole.MASTER || currentRole === UserRole.ADMIN) && (
+                    <option value={UserRole.ADMIN}>Administrador de Empresa</option>
+                  )}
                 </select>
               </div>
+
+              {formData.role === UserRole.SALES && (
+                <div className="flex items-center space-x-3 bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
+                  <input
+                    type="checkbox"
+                    id="can_close_sales"
+                    className="w-5 h-5 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500 bg-white"
+                    checked={formData.can_close_sales}
+                    onChange={e => setFormData({ ...formData, can_close_sales: e.target.checked })}
+                  />
+                  <label htmlFor="can_close_sales" className="text-sm font-bold text-indigo-900 cursor-pointer">
+                    Pode fazer Fecho de Caixa Diário
+                  </label>
+                </div>
+              )}
 
               {error && (
                 <div className="bg-rose-50 p-3 rounded-xl border border-rose-100">

@@ -11,7 +11,8 @@ export enum UserRole {
 export enum TenantStatus {
   TRIAL = 'trial',
   ACTIVE = 'active',
-  EXPIRED = 'expired'
+  EXPIRED = 'expired',
+  SUSPENDED = 'suspended'
 }
 
 export interface Tenant {
@@ -23,6 +24,10 @@ export interface Tenant {
   created_at?: string;
   logo_url?: string;
   contact_email?: string;
+  address?: string;
+  phone?: string;
+  trial_start_date?: string;
+  trial_end_date?: string;
 }
 
 export interface UserProfile {
@@ -31,12 +36,14 @@ export interface UserProfile {
   role: UserRole;
   full_name?: string;
   email?: string;
+  can_close_sales?: boolean;
 }
 
 export interface TenantStatusInfo {
   tenant_id: string;
   status: TenantStatus;
   company_name: string;
+  trial_end_date?: string;
 }
 
 export interface AuthContextType {
