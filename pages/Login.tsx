@@ -193,8 +193,11 @@ const Login: React.FC = () => {
         )}
 
         <div className="mt-10 pt-8 border-t border-gray-50 text-center">
-          <p className="text-[10px] text-gray-300 font-black uppercase tracking-widest">
+          <p className="text-[10px] text-gray-300 font-black uppercase tracking-widest mb-2">
             Protected by HR-GESTPRO Infrastructure
+          </p>
+          <p className="text-[10px] text-indigo-400 font-black uppercase tracking-widest">
+            Desenvolvido por HR- Tecnologias | Contacto: 923658211
           </p>
         </div>
       </div>

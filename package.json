@@ -2,11 +2,34 @@
   "name": "hr-gestpro-2.0",
   "private": true,
   "version": "0.0.0",
-  "type": "module",
+  "main": "electron/main.js",
+  "build": {
+    "appId": "com.hrtecnologias.gestpro",
+    "productName": "HR-GESTPRO",
+    "directories": {
+      "output": "dist_electron"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "target": "dmg"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "public/vite.svg"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "electron:build": "vite build && electron-builder --win"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.90.1",
