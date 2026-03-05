@@ -84,10 +84,14 @@ export const PosTerminal = ({ session, tenantId, user, onUpdateSession, tenantSt
             setItems([...items, {
                 id: Math.random().toString(),
                 product_id: prod.id,
+                code: prod.barcode || `P-${prod.id.substring(0, 4)}`,
                 name: prod.name,
+                lote: prod.lote || '-',
                 quantity: 1,
                 unit_price: Number(prod.unit_price),
                 discount: 0,
+                tax_rate: 14,
+                exemption_code: '',
                 total: Number(prod.unit_price)
             }]);
         }
@@ -98,10 +102,14 @@ export const PosTerminal = ({ session, tenantId, user, onUpdateSession, tenantSt
         if (!newItemName) return;
         setItems([...items, {
             id: Math.random().toString(),
+            code: 'M-000',
             name: newItemName,
+            lote: '-',
             quantity: newItemQty,
             unit_price: newItemPrice,
             discount: 0,
+            tax_rate: 14,
+            exemption_code: '',
             total: (newItemQty * newItemPrice)
         }]);
         setNewItemName('');
@@ -193,13 +201,21 @@ export const PosTerminal = ({ session, tenantId, user, onUpdateSession, tenantSt
 
             // 5. Build PDF Logic
             const invoice: InvoiceData = {
-                id: invoiceRecord.invoice_no,
+                id: invoiceRecord?.invoice_no || `MANUAL/${Date.now()}`,
+                type: docType === 'FT' ? 'FATURA / RECIBO' : 'FATURA PROFORMA',
                 client_name: clientName,
                 client_tax_id: clientNif,
+                client_address: selectedCustomer?.address || 'N/A',
+                client_city: selectedCustomer?.city || 'Luanda',
+                client_country: 'Angola',
                 date: new Date().toLocaleDateString('pt-PT') + ' ' + new Date().toLocaleTimeString('pt-PT'),
+                due_date: dueDate ? new Date(dueDate).toLocaleDateString('pt-PT') : undefined,
+                reference: paymentMethod.toUpperCase(),
                 items: items as LibInvoiceItem[],
-                subtotal,
-                tax,
+                subtotal: unTaxedSubtotal,
+                discount_total: globalDiscount,
+                tax_total: tax,
+                retention: 0, // Implementar mais tarde se o retalho exigir retenção na fonte
                 total
             };
 
@@ -211,6 +227,10 @@ export const PosTerminal = ({ session, tenantId, user, onUpdateSession, tenantSt
                 plan_tier: 'Pro',
                 address: 'Luanda, Angola',
                 phone: '+244 923 000 000',
+                bank_name: 'Banco Angolano de Investimentos (BAI)',
+                bank_account: '1234 5678 9012',
+                bank_iban: 'AO06 0000 0000 0000 0000 0000 00',
+                tax_regime: 'Regime Simplificado (IVA)'
             };
 
             if (format === 'A4') {

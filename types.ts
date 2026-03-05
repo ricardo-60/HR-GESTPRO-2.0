@@ -28,6 +28,10 @@ export interface Tenant {
   phone?: string;
   trial_start_date?: string;
   trial_end_date?: string;
+  bank_name?: string;
+  bank_account?: string;
+  bank_iban?: string;
+  tax_regime?: string;
 }
 
 export interface UserProfile {

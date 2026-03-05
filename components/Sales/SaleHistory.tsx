@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
+import { generateInvoiceA4, generateThermalReceipt, InvoiceData, InvoiceItem as LibInvoiceItem } from '../../lib/InvoiceGenerator';
+import { Tenant } from '../../types';
 
 export const SaleHistory = ({ tenantId }: { tenantId: string }) => {
     const [invoices, setInvoices] = useState<any[]>([]);
@@ -34,6 +36,64 @@ export const SaleHistory = ({ tenantId }: { tenantId: string }) => {
             fetchInvoices();
         }
     }
+
+    const handleReprint = async (invoiceRecord: any) => {
+        try {
+            // Fetch Items
+            const { data: itemsData, error: itemsErr } = await supabase.from('invoice_items').select('*').eq('invoice_id', invoiceRecord.id);
+            if (itemsErr) throw itemsErr;
+
+            const mappedItems: LibInvoiceItem[] = itemsData.map(i => ({
+                id: i.id,
+                code: '2VIA',
+                name: i.product_name,
+                lote: '-',
+                quantity: i.quantity,
+                unit_price: i.unit_price,
+                discount: i.discount || 0,
+                tax_rate: 14,
+                exemption_code: '',
+                total: i.total
+            }));
+
+            // Fetch Tenant
+            const { data: tenantData } = await supabase.from('tenants').select('*').eq('id', tenantId).single();
+
+            const invoice: InvoiceData = {
+                id: invoiceRecord.invoice_no,
+                type: invoiceRecord.doc_type === 'FT' ? 'FATURA / RECIBO' : 'FATURA PROFORMA',
+                client_name: invoiceRecord.client_name || 'Desconhecido',
+                client_tax_id: invoiceRecord.client_tax_id || '',
+                date: new Date(invoiceRecord.created_at).toLocaleDateString('pt-PT') + ' ' + new Date(invoiceRecord.created_at).toLocaleTimeString('pt-PT'),
+                items: mappedItems,
+                subtotal: invoiceRecord.subtotal,
+                discount_total: invoiceRecord.discount_amount,
+                tax_total: invoiceRecord.tax_amount,
+                total: invoiceRecord.total_amount
+            };
+
+            const currentTenant: Tenant = {
+                id: tenantData?.id || '',
+                company_name: tenantData?.company_name || 'Empresa Local',
+                tax_id: tenantData?.tax_id || '123456789',
+                status: 'active' as any,
+                plan_tier: 'Pro',
+                address: tenantData?.address || 'Luanda, Angola',
+                phone: tenantData?.phone || '',
+                bank_name: tenantData?.bank_name || 'Banco Selecionado',
+                bank_account: tenantData?.bank_account || '0000 0000 0000',
+                bank_iban: tenantData?.bank_iban || 'AO06 0000 0000 0000 0000 0000 00',
+                tax_regime: tenantData?.tax_regime || 'Regime Simplificado (IVA)'
+            };
+
+            const doc = await generateInvoiceA4(invoice, currentTenant);
+            doc.save(`${invoice.id.replace('/', '_')}_2Via.pdf`);
+
+        } catch (error) {
+            console.error(error);
+            alert("Erro ao re-imprimir o documento.");
+        }
+    };
 
     const filtered = invoices.filter(inv => {
         const matchName = inv.client_name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -136,7 +196,7 @@ export const SaleHistory = ({ tenantId }: { tenantId: string }) => {
                                     {new Date(inv.created_at).toLocaleDateString()}
                                 </td>
                                 <td className="px-8 py-5 flex items-center justify-end space-x-2">
-                                    <button title="Re-Imprimir" className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-indigo-100 hover:text-indigo-600 flex items-center justify-center transition-colors">
+                                    <button onClick={() => handleReprint(inv)} title="Re-Imprimir" className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-indigo-100 hover:text-indigo-600 flex items-center justify-center transition-colors">
                                         <i className="fas fa-print"></i>
                                     </button>
                                     {inv.status !== 'cancelled' && (

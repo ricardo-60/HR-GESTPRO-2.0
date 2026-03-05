@@ -2,23 +2,38 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Tenant } from '../types';
 
+import { numeroParaExtenso } from './numberToWords';
+
 export interface InvoiceItem {
     id: string;
+    code: string; // Ex: P001
     name: string;
+    lote?: string; // Ex: L-100
     quantity: number;
     unit_price: number;
+    discount?: number;
+    tax_rate?: number; // Ex: 14%
+    exemption_code?: string; // Ex: M00
     total: number;
 }
 
 export interface InvoiceData {
-    id: string; // Ex: FT-2023/1042
+    id: string; // Ex: 2025/008902
+    type: string; // 'Fatura-Recibo' ou 'Fatura Proforma'
     client_name: string;
     client_tax_id?: string;
+    client_address?: string;
+    client_city?: string;
+    client_country?: string;
     date: string;
+    due_date?: string; // Data vencimento
+    reference?: string; // Ref Cliente
     items: InvoiceItem[];
-    subtotal: number;
-    tax: number;
-    total: number;
+    subtotal: number; // Ilíquido
+    discount_total: number;
+    tax_total: number;
+    retention?: number; // Retenção na Fonte
+    total: number; // Total Final
 }
 
 // Helper para converter URL em Base64 para inserir no PDF
@@ -47,15 +62,18 @@ const getBase64ImageFromURL = (url: string): Promise<string> => {
 export const generateInvoiceA4 = async (invoice: InvoiceData, tenant: Tenant) => {
     const doc = new jsPDF('p', 'mm', 'a4');
 
+    // MODO ESTILIZAÇÃO EMPRESARIAL - CORES E LINHAS CLARAS
+    const accentColor: [number, number, number] = [63, 81, 181]; // Azul Empresarial
+
     // Header Config & Watermark
     if (tenant.logo_url) {
         try {
             const base64Logo = await getBase64ImageFromURL(tenant.logo_url);
-            doc.addImage(base64Logo, 'PNG', 14, 15, 40, 40, '', 'FAST');
+            doc.addImage(base64Logo, 'PNG', 14, 15, 35, 35, '', 'FAST');
 
             // Watermark (Translucent in center)
             doc.saveGraphicsState();
-            doc.setGState(new (doc as any).GState({ opacity: 0.1 }));
+            doc.setGState(new (doc as any).GState({ opacity: 0.05 }));
             doc.addImage(base64Logo, 'PNG', 50, 100, 110, 110, '', 'FAST');
             doc.restoreGraphicsState();
         } catch (e) {
@@ -63,77 +81,195 @@ export const generateInvoiceA4 = async (invoice: InvoiceData, tenant: Tenant) =>
         }
     }
 
-    doc.setFontSize(22);
+    // CABEÇALHO DA EMPRESA (Lado Esquerdo)
+    doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text('FATURA / RECIBO', 140, 25);
+    doc.text(tenant.company_name.toUpperCase(), 55, 20);
 
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Doc. Nº: ${invoice.id}`, 140, 32);
-    doc.text(`Data: ${invoice.date}`, 140, 37);
+    let hY = 25;
+    if (tenant.tax_regime) { doc.text(tenant.tax_regime, 55, hY); hY += 5; }
+    doc.text(`NIF: ${tenant.tax_id || 'N/A'}`, 55, hY); hY += 5;
+    if (tenant.contact_email) { doc.text(`Email: ${tenant.contact_email}`, 55, hY); hY += 5; }
+    if (tenant.address) { doc.text(`Endereço: ${tenant.address}`, 55, hY); hY += 5; }
+    if (tenant.phone) { doc.text(`Tel: ${tenant.phone}`, 55, hY); }
 
-    // Tenant Info
-    doc.setFontSize(12);
+    // TIPO DE DOCUMENTO EM DESTAQUE E DATAS (Lado Direito)
+    doc.setFillColor(...accentColor);
+    doc.rect(130, 15, 66, 12, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text(tenant.company_name, 14, 60);
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`NIF: ${tenant.tax_id || 'N/A'}`, 14, 65);
-    if (tenant.address) doc.text(tenant.address, 14, 70);
-    if (tenant.phone) doc.text(`Tel: ${tenant.phone}`, 14, 75);
-    if (tenant.contact_email) doc.text(`Email: ${tenant.contact_email}`, 14, 80);
+    doc.text((invoice.type || 'FATURA / RECIBO').toUpperCase(), 163, 23, { align: 'center' });
 
-    // Client Info
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(10);
+    doc.text(`Doc. Nº: ${invoice.id}`, 130, 33);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Data de Emissão: ${invoice.date}`, 130, 39);
+    if (invoice.due_date) doc.text(`Data de Vencimento: ${invoice.due_date}`, 130, 45);
+    if (invoice.reference) doc.text(`Ref Cliente: ${invoice.reference}`, 130, 51);
+
+    // QUADRO DADOS DO CLIENTE
+    doc.setDrawColor(200, 200, 200);
+    doc.setFillColor(245, 245, 245);
+    doc.roundedRect(14, 60, 182, 30, 2, 2, 'FD');
+
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.text('Dados do Cliente:', 140, 60);
+    doc.text('Exmo(a) Senhor(a)', 18, 67);
+
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Nome: ${invoice.client_name}`, 140, 67);
-    if (invoice.client_tax_id) doc.text(`NIF: ${invoice.client_tax_id}`, 140, 72);
+    doc.text(`Nome: ${invoice.client_name}`, 18, 74);
+    doc.text(`NIF: ${invoice.client_tax_id || 'Consumidor Final'}`, 18, 80);
 
-    // Table
-    const tableData = invoice.items.map((item, index) => [
-        index + 1,
+    const clientAddress = invoice.client_address ? `${invoice.client_address}` : '';
+    const clientLocation = `${invoice.client_city || 'Luanda'}, ${invoice.client_country || 'Angola'}`;
+    doc.text(`Endereço: ${clientAddress} - ${clientLocation}`, 18, 86);
+
+    // TABELA DE PRODUTOS OU SERVIÇOS
+    const tableData = invoice.items.map((item) => [
+        item.code || 'GERAL',
         item.name,
-        item.quantity.toString(),
+        item.lote || '-',
         `KZ ${item.unit_price.toFixed(2)}`,
+        item.quantity.toString(),
+        `KZ ${(item.discount || 0).toFixed(2)}`,
+        `${item.tax_rate || 14}%`,
         `KZ ${item.total.toFixed(2)}`
     ]);
 
     autoTable(doc, {
         startY: 95,
-        head: [['#', 'Descrição', 'Qtd', 'Preço Unitário', 'Total']],
+        head: [['Código', 'Descrição', 'Lote', 'Preço Unitário', 'Qtd', 'Desc.', 'Taxa', 'Total']],
         body: tableData,
         theme: 'grid',
-        headStyles: { fillColor: [79, 70, 229] }, // Indigo 600
-        styles: { fontSize: 9, cellPadding: 4 },
+        headStyles: { fillColor: accentColor, textColor: 255 },
+        styles: { fontSize: 8, cellPadding: 3, lineColor: [220, 220, 220] },
         columnStyles: {
-            0: { cellWidth: 10 },
+            0: { cellWidth: 20 },
             1: { cellWidth: 'auto' },
-            2: { cellWidth: 20, halign: 'center' },
-            3: { cellWidth: 35, halign: 'right' },
-            4: { cellWidth: 35, halign: 'right' },
+            2: { cellWidth: 15, halign: 'center' },
+            3: { cellWidth: 25, halign: 'right' },
+            4: { cellWidth: 12, halign: 'center' },
+            5: { cellWidth: 20, halign: 'right' },
+            6: { cellWidth: 15, halign: 'center' },
+            7: { cellWidth: 30, halign: 'right' },
         }
     });
 
-    const finalY = (doc as any).lastAutoTable.finalY + 15;
+    let currentY = (doc as any).lastAutoTable.finalY + 10;
 
-    // Totals
-    doc.setFontSize(10);
-    doc.text('Subtotal:', 140, finalY);
-    doc.text(`KZ ${invoice.subtotal.toFixed(2)}`, 180, finalY, { align: 'right' });
+    // SE LOR MAIOR QUE A PÁGINA, QUEBRAR AQUI. (Mecanismo básico)
+    if (currentY > 200) {
+        doc.addPage();
+        currentY = 20;
+    }
 
-    doc.text('IVA (14%):', 140, finalY + 6);
-    doc.text(`KZ ${invoice.tax.toFixed(2)}`, 180, finalY + 6, { align: 'right' });
-
-    doc.setFontSize(12);
+    // QUADRO RESUMO DE IMPOSTOS (Lado Esquerdo)
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
-    doc.text('TOTAL A PAGAR:', 140, finalY + 15);
-    doc.text(`KZ ${invoice.total.toFixed(2)}`, 180, finalY + 15, { align: 'right' });
+    doc.text('Resumo de Impostos:', 14, currentY);
 
-    // Footer
+    // Preparar dados do resumo fiscal baseando nos itens
+    const taxSummary: Record<string, { rate: number, inc: number, val: number, exemption: string }> = {};
+    invoice.items.forEach(it => {
+        const rate = it.tax_rate || 14;
+        const key = `IVA_${rate}`;
+        if (!taxSummary[key]) {
+            taxSummary[key] = { rate, inc: 0, val: 0, exemption: rate === 0 ? (it.exemption_code || 'M00') : '-' };
+        }
+        taxSummary[key].inc += (it.quantity * it.unit_price) - (it.discount || 0);
+        taxSummary[key].val += ((it.quantity * it.unit_price) - (it.discount || 0)) * (rate / 100);
+    });
+
+    const taxRows = Object.values(taxSummary).map(t => [
+        t.rate === 0 ? 'ISENTO' : 'NORMAL',
+        `${t.rate}%`,
+        `KZ ${t.inc.toFixed(2)}`,
+        `KZ ${t.val.toFixed(2)}`,
+        t.exemption
+    ]);
+
+    autoTable(doc, {
+        startY: currentY + 3,
+        margin: { left: 14, right: 110 }, // Ocupar metade esquerda
+        head: [['Cód. Imposto', 'Taxa', 'Incidência', 'Valor Imposto', 'Motivo Isenção']],
+        body: taxRows,
+        theme: 'plain',
+        headStyles: { fillColor: [240, 240, 240], textColor: 0, lineWidth: 0.1, lineColor: 200 },
+        bodyStyles: { lineWidth: 0.1, lineColor: 200 },
+        styles: { fontSize: 7, cellPadding: 2 }
+    });
+
+    // TOTAIS DA FATURA (Lado Direito)
+    const rightBoxX = 120;
+    const rightBoxW = 76;
+    doc.setDrawColor(200, 200, 200);
+    doc.rect(rightBoxX, currentY, rightBoxW, 35);
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Total Ilíquido:', rightBoxX + 5, currentY + 7);
+    doc.text(`KZ ${invoice.subtotal.toFixed(2)}`, rightBoxX + rightBoxW - 5, currentY + 7, { align: 'right' });
+
+    doc.text('Total Descontos:', rightBoxX + 5, currentY + 14);
+    doc.text(`KZ ${invoice.discount_total.toFixed(2)}`, rightBoxX + rightBoxW - 5, currentY + 14, { align: 'right' });
+
+    doc.text('Impostos (IVA):', rightBoxX + 5, currentY + 21);
+    doc.text(`KZ ${invoice.tax_total.toFixed(2)}`, rightBoxX + rightBoxW - 5, currentY + 21, { align: 'right' });
+
+    if (invoice.retention && invoice.retention > 0) {
+        doc.text('Retenção na Fonte:', rightBoxX + 5, currentY + 28);
+        doc.text(`- KZ ${invoice.retention.toFixed(2)}`, rightBoxX + rightBoxW - 5, currentY + 28, { align: 'right' });
+    }
+
+    doc.setFillColor(240, 240, 240);
+    doc.rect(rightBoxX, currentY + 35, rightBoxW, 10, 'F');
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('TOTAL A PAGAR:', rightBoxX + 5, currentY + 42);
+    doc.text(`KZ ${invoice.total.toFixed(2)}`, rightBoxX + rightBoxW - 5, currentY + 42, { align: 'right' });
+
+
+    // EXTENSO EM KWANZAS
+    currentY = Math.max((doc as any).lastAutoTable.finalY + 5, currentY + 50);
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Demos a V. Exas o débito de:', 14, currentY);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text(numeroParaExtenso(invoice.total), 14, currentY + 6);
+
+    currentY += 16;
+
+    // DADOS BANCÁRIOS E PAGAMENTO
+    doc.setFillColor(250, 250, 250);
+    doc.setDrawColor(220, 220, 220);
+    doc.roundedRect(14, currentY, 182, 18, 2, 2, 'FD');
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Dados para Pagamento Bancário:', 18, currentY + 6);
+    doc.setFont('helvetica', 'normal');
+
+    const bankName = tenant.bank_name || 'Banco Comercial Base';
+    const bankAcc = tenant.bank_account || '0000 0000 0000';
+    const bankIban = tenant.bank_iban || 'AO06 0000 0000 0000 0000 0000 00';
+
+    doc.text(`Banco: ${bankName}   |   Conta: ${bankAcc}   |   IBAN: ${bankIban}`, 18, currentY + 12);
+
+    currentY += 25;
+
+    // OBSERVAÇÕES E RODAPÉ AGT
     doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    const regime = tenant.tax_regime || 'Regime Simplificado';
+    doc.text(`Observações: Enquadrado no ${regime}.`, 14, currentY);
+
+    // Homologação (Sempre visível se exigido por certificação)
     doc.setFont('helvetica', 'italic');
     doc.text('Processado por programa validado n 000/AGT - HR-GESTPRO 2.0', 105, 280, { align: 'center' });
 
@@ -183,7 +319,7 @@ export const generateThermalReceipt = async (invoice: InvoiceData, tenant: Tenan
     doc.text('----------------------------------------------------', centerX, cursorY, { align: 'center' });
     cursorY += 5;
     doc.setFont('helvetica', 'bold');
-    doc.text('FATURA / RECIBO', centerX, cursorY, { align: 'center' });
+    doc.text((invoice.type || 'FATURA / RECIBO').toUpperCase(), centerX, cursorY, { align: 'center' });
     cursorY += 5;
     doc.setFont('helvetica', 'normal');
     doc.text(`Doc: ${invoice.id}`, centerX, cursorY, { align: 'center' });
@@ -228,9 +364,15 @@ export const generateThermalReceipt = async (invoice: InvoiceData, tenant: Tenan
     doc.text('Subtotal:', 5, cursorY);
     doc.text(invoice.subtotal.toFixed(2), 75, cursorY, { align: 'right' });
 
+    if (invoice.discount_total > 0) {
+        cursorY += 4;
+        doc.text('Desc:', 5, cursorY);
+        doc.text(`-${invoice.discount_total.toFixed(2)}`, 75, cursorY, { align: 'right' });
+    }
+
     cursorY += 4;
-    doc.text('IVA (14%):', 5, cursorY);
-    doc.text(invoice.tax.toFixed(2), 75, cursorY, { align: 'right' });
+    doc.text('IVA:', 5, cursorY);
+    doc.text(invoice.tax_total.toFixed(2), 75, cursorY, { align: 'right' });
 
     cursorY += 6;
     doc.setFontSize(10);
