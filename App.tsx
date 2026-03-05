@@ -19,6 +19,7 @@ const PurchaseOrders = lazy(() => import('./pages/PurchaseOrders'));
 const Reports = lazy(() => import('./pages/Reports'));
 const SaftExport = lazy(() => import('./pages/SaftExport'));
 const KeyManagement = lazy(() => import('./pages/KeyManagement'));
+const LandingPage = lazy(() => import('./pages/LandingPage'));
 
 /**
  * MainRouter: Core SPA Navigation Logic.
@@ -89,6 +90,7 @@ const MainRouter: React.FC = () => {
 
 const AppContent: React.FC = () => {
   const { user, profile, tenantStatus, loading, signOut } = useAuth();
+  const [showLogin, setShowLogin] = useState(false);
 
   if (!checkSupabaseConfig()) {
     return (
@@ -136,6 +138,14 @@ const AppContent: React.FC = () => {
   }
 
   if (!user) {
+    // Mostrar Landing Page como ecrã inicial, com opção de ir para Login
+    if (!showLogin) {
+      return (
+        <Suspense fallback={<div className="min-h-screen bg-slate-950" />}>
+          <LandingPage onLogin={() => setShowLogin(true)} />
+        </Suspense>
+      );
+    }
     return <Login />;
   }
 

@@ -8,14 +8,16 @@ const __dirname = path.dirname(__filename);
 
 function createWindow() {
     const mainWindow = new BrowserWindow({
-        width: 1280,
-        height: 800,
-        title: "HR-GESTPRO",
+        width: 1366,
+        height: 860,
+        minWidth: 1024,
+        minHeight: 600,
+        title: 'HR-GESTPRO 2.0',
+        icon: path.join(__dirname, '../build/icon.png'),
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false,
         },
-        icon: path.join(__dirname, '../public/vite.svg') // Change icon later if needed
     });
 
     // Remove standard Menu for a cleaner app look

@@ -1,11 +1,13 @@
 {
   "name": "hr-gestpro-2.0",
   "private": true,
-  "version": "0.0.0",
+  "version": "2.0.0",
   "main": "electron/main.js",
   "build": {
     "appId": "com.hrtecnologias.gestpro",
     "productName": "HR-GESTPRO",
+    "copyright": "Copyright © 2026 HR Tecnologias",
+    "icon": "build/icon.png",
     "directories": {
       "output": "dist_electron"
     },
@@ -15,21 +17,35 @@
       "package.json"
     ],
     "mac": {
-      "target": "dmg"
+      "target": "dmg",
+      "icon": "build/icon.png"
     },
     "win": {
       "target": "nsis",
-      "icon": "public/vite.svg"
+      "icon": "build/icon.png"
     },
     "linux": {
-      "target": "AppImage"
+      "target": "AppImage",
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerHeaderBackground": "#0f172a",
+      "installerIcon": "build/icon.png",
+      "uninstallerIcon": "build/icon.png",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "HR-GESTPRO 2.0"
     }
   },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "electron:dev": "electron .",
     "electron:build": "vite build && electron-builder --win",
+    "electron:build:all": "vite build && electron-builder --win --linux",
     "test": "vitest run"
   },
   "dependencies": {
