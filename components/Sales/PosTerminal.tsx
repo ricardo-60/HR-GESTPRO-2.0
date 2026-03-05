@@ -158,7 +158,49 @@ export const PosTerminal = ({ session, tenantId, user, onUpdateSession, tenantSt
                 total: total
             });
 
-            alert('Aviso: Venda efetuada OFFLINE! O documento sincronizará quando houver internet.');
+            // Gerar PDF Offline para entregar ao cliente na mesma
+            const offlineInvoiceData: InvoiceData = {
+                id: `OFFLINE-${Date.now()}`,
+                type: docType === 'FT' ? 'FATURA / RECIBO' : 'FATURA PROFORMA',
+                client_name: clientName,
+                client_tax_id: clientNif,
+                client_address: selectedCustomer?.address || 'N/A',
+                client_city: selectedCustomer?.city || 'Luanda',
+                client_country: 'Angola',
+                date: new Date().toLocaleDateString('pt-PT') + ' ' + new Date().toLocaleTimeString('pt-PT'),
+                due_date: dueDate ? new Date(dueDate).toLocaleDateString('pt-PT') : undefined,
+                reference: paymentMethod.toUpperCase(),
+                items: items as LibInvoiceItem[],
+                subtotal: unTaxedSubtotal,
+                discount_total: globalDiscount,
+                tax_total: tax,
+                retention: 0,
+                total
+            };
+
+            const currentTenant: Tenant = {
+                id: tenantStatus?.tenant_id || '',
+                company_name: tenantStatus?.company_name || 'Empresa Local',
+                tax_id: tenantStatus?.tax_id || '123456789',
+                status: tenantStatus?.status || 'active' as any,
+                plan_tier: 'Pro',
+                address: 'Luanda, Angola',
+                phone: '+244 923 000 000',
+                bank_name: tenantStatus?.bank_name || 'BAI',
+                bank_account: tenantStatus?.bank_account || '',
+                bank_iban: tenantStatus?.bank_iban || '',
+                tax_regime: tenantStatus?.is_iva_enabled ? 'Regime Geral (IVA 14%)' : 'Regime de Exclusão (Isento)'
+            };
+
+            if (format === 'A4') {
+                const doc = await generateInvoiceA4(offlineInvoiceData, currentTenant);
+                doc.save(`${offlineInvoiceData.id}_Offline.pdf`);
+            } else {
+                const doc = await generateThermalReceipt(offlineInvoiceData, currentTenant);
+                doc.save(`${offlineInvoiceData.id}_Offline_Talao.pdf`);
+            }
+
+            alert('Aviso Local: Operação guardada na FILA OFFLINE. O documento PDV foi gerado.');
             resetCheckout();
         }
     };
