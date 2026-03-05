@@ -4,10 +4,10 @@ import { AuthProvider, useAuth } from './AuthContext';
 import { UserRole, TenantStatus } from './types';
 import { checkSupabaseConfig, SUPABASE_URL, SUPABASE_ANON_KEY } from './lib/supabase';
 import Layout from './components/Layout';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
 
-// Usando React.lazy para Code Splitting (Acelera o tempo de carregamento inicial)
-const Login = lazy(() => import('./pages/Login'));
-const Dashboard = lazy(() => import('./pages/Dashboard'));
+// Usando React.lazy apenas para módulos secundários pesados (Code Splitting Otimizado)
 const UserManagement = lazy(() => import('./pages/UserManagement'));
 const CompanyManagement = lazy(() => import('./pages/CompanyManagement'));
 const SalesManagement = lazy(() => import('./pages/SalesManagement'));
@@ -121,15 +121,7 @@ const AppContent: React.FC = () => {
   }
 
   if (!user) {
-    return (
-      <Suspense fallback={
-        <div className="min-h-screen flex items-center justify-center bg-slate-50">
-          <div className="w-12 h-12 border-4 border-slate-200 border-t-indigo-600 rounded-full animate-spin"></div>
-        </div>
-      }>
-        <Login />
-      </Suspense>
-    );
+    return <Login />;
   }
 
   if (tenantStatus?.status === TenantStatus.EXPIRED || tenantStatus?.status === TenantStatus.SUSPENDED) {
