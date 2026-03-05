@@ -19,7 +19,7 @@ export const MANUAL_CONTENT = `
 O **HR-GESTPRO 2.0** é uma solução avançada de gestão comercial desenhada para o mercado angolano, garantindo conformidade total com as normas da **AGT**.
 
 ### Instalação Desktop (Electron)
-- Execute o instalador `HR-GESTPRO - Setup.exe`.
+- Execute o instalador \`HR-GESTPRO - Setup.exe\`.
 - O sistema instalará automaticamente os drivers de base de dados e criará um atalho no seu ecrã.
 
 ### Instalação PWA (Mobile)
