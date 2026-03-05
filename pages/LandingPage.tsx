@@ -29,10 +29,13 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
             <nav className="fixed top-0 inset-x-0 z-50 border-b border-slate-800/50 bg-slate-950/80 backdrop-blur-xl">
                 <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
-                            <span className="text-white font-black text-sm">HR</span>
+                        <div className="w-10 h-10 bg-white/5 rounded-xl p-2 border border-white/10 flex items-center justify-center shadow-lg">
+                            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full drop-shadow-[0_0_8px_rgba(234,88,12,0.4)]">
+                                <path d="M20 80L40 50L35 45L60 20L55 50L65 55L45 80H20Z" fill="#EA580C" />
+                                <path d="M10 90C30 90 70 10 90 10" stroke="#1E3A8A" stroke-width="2" stroke-linecap="round" stroke-dasharray="4 4" className="opacity-50" />
+                            </svg>
                         </div>
-                        <span className="font-black text-xl tracking-tight">HR-GESTPRO <span className="text-indigo-400">2.0</span></span>
+                        <span className="font-black text-xl tracking-tight">HR-GESTPRO <span className="text-[#EA580C]">2.0</span></span>
                     </div>
                     <button
                         onClick={onLogin}

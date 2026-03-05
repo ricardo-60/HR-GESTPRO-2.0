@@ -44,10 +44,13 @@ export const Sidebar: React.FC<{
       bg-slate-900 h-full transition-all duration-300 flex flex-col border-r border-slate-800 shadow-xl overflow-hidden
     `}>
       <div className="p-6 flex items-center space-x-3 border-b border-slate-800 bg-slate-900 shrink-0">
-        <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/20">
-          <i className="fas fa-rocket text-white text-sm"></i>
+        <div className="w-9 h-9 bg-white/5 rounded-lg p-1.5 border border-white/10 flex items-center justify-center shrink-0 shadow-lg">
+          <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+            <path d="M20 80L40 50L35 45L60 20L55 50L65 55L45 80H20Z" fill="#EA580C" />
+            <path d="M10 90C30 90 70 10 90 10" stroke="#1E3A8A" stroke-width="2" stroke-linecap="round" stroke-dasharray="4 4" className="opacity-50" />
+          </svg>
         </div>
-        {isOpen && <h1 className="text-white font-black text-lg tracking-tighter">HR-GESTPRO</h1>}
+        {isOpen && <h1 className="text-white font-black text-lg tracking-tighter">HR-GESTPRO <span className="text-[#EA580C]">2.0</span></h1>}
       </div>
 
       <nav className="flex-1 mt-6 px-3 space-y-1 overflow-y-auto custom-scrollbar">
