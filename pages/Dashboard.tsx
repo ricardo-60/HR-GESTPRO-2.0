@@ -5,6 +5,7 @@ import LicenseActivationModal from '../components/LicenseActivationModal';
 import { ShieldAlert, KeyRound, Timer, Download } from 'lucide-react';
 import { downloadProformaPDF } from '../lib/ProformaGenerator';
 import { supabase } from '../lib/supabase';
+import { OnboardingTour } from '../components/OnboardingTour';
 
 const StatCard: React.FC<{ title: string; value: string; icon: string; color: string; trend?: string }> = ({ title, value, icon, color, trend }) => (
   <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
@@ -30,6 +31,19 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ variant }) => {
   const { tenantStatus, user, signOut } = useAuth();
   const [showActivation, setShowActivation] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  React.useEffect(() => {
+    const shown = localStorage.getItem(`hgp_onboarding_shown_${user?.id}`);
+    if (!shown && tenantStatus?.status === 'trial') {
+      setShowOnboarding(true);
+    }
+  }, [user, tenantStatus]);
+
+  const handleCloseOnboarding = () => {
+    localStorage.setItem(`hgp_onboarding_shown_${user?.id}`, 'true');
+    setShowOnboarding(false);
+  };
 
   // Cálculo de dias para expiração
   const expiryDate = tenantStatus?.license_expires_at || tenantStatus?.trial_end_date;
@@ -112,13 +126,19 @@ const Dashboard: React.FC<DashboardProps> = ({ variant }) => {
 
   return (
     <div className="space-y-10">
+      {showOnboarding && (
+        <OnboardingTour
+          tenantName={tenantStatus?.company_name || 'Empresa'}
+          onClose={handleCloseOnboarding}
+        />
+      )}
       {/* Banner de Expiração */}
       {expiryDate && daysRemaining >= 0 && daysRemaining <= 14 && (
         <div className={`flex flex-col md:flex-row items-center justify-between p-6 rounded-[2rem] border animate-in slide-in-from-top-4 duration-500 shadow-xl ${daysRemaining <= 3
-            ? 'bg-red-50 border-red-100'
-            : daysRemaining <= 7
-              ? 'bg-amber-50 border-amber-100'
-              : 'bg-indigo-50 border-indigo-100'
+          ? 'bg-red-50 border-red-100'
+          : daysRemaining <= 7
+            ? 'bg-amber-50 border-amber-100'
+            : 'bg-indigo-50 border-indigo-100'
           }`}>
           <div className="flex items-center gap-5 mb-4 md:mb-0">
             <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg ${daysRemaining <= 3 ? 'bg-red-600 shadow-red-200' : 'bg-amber-500 shadow-amber-100'

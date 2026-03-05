@@ -111,7 +111,10 @@ const CompanyManagement: React.FC = () => {
     try {
       let currentLogoUrl = formData.logo_url;
       if (logoFile) {
-        currentLogoUrl = await uploadLogo(logoFile);
+        const { ImageUtils } = await import('../lib/imageUtils');
+        const compressedBlob = await ImageUtils.compressImage(logoFile, 400, 0.8);
+        const compressedFile = new File([compressedBlob], logoFile.name, { type: 'image/jpeg' });
+        currentLogoUrl = await uploadLogo(compressedFile);
       }
 
       const finalData = { ...formData, logo_url: currentLogoUrl };
@@ -213,7 +216,7 @@ const CompanyManagement: React.FC = () => {
                     <td className="px-8 py-6">
                       <div className="flex items-center space-x-2">
                         <div className={`w-2 h-2 rounded-full ${t.status === TenantStatus.ACTIVE ? 'bg-emerald-500' :
-                            t.status === TenantStatus.TRIAL ? 'bg-amber-500' : 'bg-rose-500'
+                          t.status === TenantStatus.TRIAL ? 'bg-amber-500' : 'bg-rose-500'
                           }`}></div>
                         <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">{t.status}</span>
                       </div>
@@ -232,6 +235,44 @@ const CompanyManagement: React.FC = () => {
             </table>
           </div>
         )}
+      </div>
+
+      {/* Seção Segurança e Dados */}
+      <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="flex items-center space-x-6">
+          <div className="w-16 h-16 bg-slate-900 text-white rounded-[1.5rem] flex items-center justify-center text-2xl shadow-xl shadow-slate-200">
+            <i className="fas fa-shield-alt"></i>
+          </div>
+          <div>
+            <h3 className="text-xl font-black text-slate-900 tracking-tight">Segurança e Dados</h3>
+            <p className="text-slate-500 text-sm font-medium">Controlo total sobre a sua informação e backups.</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4 w-full md:w-auto">
+          <button
+            type="button"
+            onClick={async () => {
+              if (!tenantId) return;
+              try {
+                const { BackupService } = await import('../lib/BackupService');
+                await BackupService.generateFullBackup(tenantId);
+              } catch (err: any) {
+                alert('Erro ao gerar backup: ' + err.message);
+              }
+            }}
+            className="flex-1 md:flex-none bg-slate-100 hover:bg-slate-200 text-slate-700 font-black px-8 py-4 rounded-2xl text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+          >
+            <i className="fas fa-download"></i> Gerar Backup Completo
+          </button>
+
+          <div className="hidden lg:block bg-amber-50 border border-amber-100 p-4 rounded-2xl max-w-xs">
+            <p className="text-[10px] text-amber-700 leading-tight font-bold">
+              <i className="fas fa-exclamation-triangle mr-1"></i>
+              Aviso: O backup contém dados sensíveis. Guarde-o num local seguro.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Modal Cadastro/Edição */}

@@ -143,10 +143,24 @@ const Reports: React.FC = () => {
                         Gere ficheiros compatíveis com o regime fiscal de Angola para auditoria ou contabilidade externa.
                     </p>
                     <div className="grid grid-cols-2 gap-4 relative z-10">
-                        <button className="bg-white text-indigo-600 font-black py-4 rounded-2xl shadow-xl hover:bg-slate-50 transition-all flex items-center justify-center gap-2">
-                            <i className="fas fa-file-pdf"></i> PDF
+                        <button
+                            onClick={() => window.print()}
+                            className="bg-white text-indigo-600 font-black py-4 rounded-2xl shadow-xl hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
+                        >
+                            <i className="fas fa-file-pdf"></i> Imprimir
                         </button>
-                        <button className="bg-indigo-500 text-white font-black py-4 rounded-2xl border border-indigo-400 hover:bg-indigo-400 transition-all flex items-center justify-center gap-2">
+                        <button
+                            onClick={async () => {
+                                try {
+                                    const { BackupService } = await import('../lib/BackupService');
+                                    const date = new Date(dateRange.start);
+                                    await BackupService.exportSalesToCSV(tenantId || '', date.getMonth() + 1, date.getFullYear());
+                                } catch (err: any) {
+                                    alert('Erro ao exportar: ' + err.message);
+                                }
+                            }}
+                            className="bg-indigo-500 text-white font-black py-4 rounded-2xl border border-indigo-400 hover:bg-indigo-400 transition-all flex items-center justify-center gap-2"
+                        >
                             <i className="fas fa-file-csv"></i> CSV
                         </button>
                     </div>

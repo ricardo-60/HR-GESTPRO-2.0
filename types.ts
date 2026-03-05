@@ -51,6 +51,7 @@ export interface Product {
   is_active: boolean;
   is_exempt: boolean;
   exemption_reason?: string;
+  image_url?: string;
   created_at?: string;
   updated_at?: string;
 }

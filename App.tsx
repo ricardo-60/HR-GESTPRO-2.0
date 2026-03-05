@@ -1,5 +1,5 @@
 
-import React, { useState, Suspense, lazy } from 'react';
+import React, { useState, Suspense, lazy, useEffect } from 'react';
 import { AuthProvider, useAuth } from './AuthContext';
 import { UserRole, TenantStatus } from './types';
 import { checkSupabaseConfig, SUPABASE_URL, SUPABASE_ANON_KEY } from './lib/supabase';
@@ -20,6 +20,7 @@ const Reports = lazy(() => import('./pages/Reports'));
 const SaftExport = lazy(() => import('./pages/SaftExport'));
 const KeyManagement = lazy(() => import('./pages/KeyManagement'));
 const LandingPage = lazy(() => import('./pages/LandingPage'));
+const HelpCenter = lazy(() => import('./pages/HelpCenter'));
 
 /**
  * MainRouter: Core SPA Navigation Logic.
@@ -64,6 +65,8 @@ const MainRouter: React.FC = () => {
       case 'settings':
         if (role === UserRole.MASTER) return <MasterSettings />;
         return <Dashboard variant="admin" />;
+      case 'help':
+        return <HelpCenter />;
       default:
         return <Dashboard variant="admin" />;
     }
@@ -91,6 +94,23 @@ const MainRouter: React.FC = () => {
 const AppContent: React.FC = () => {
   const { user, profile, tenantStatus, loading, signOut } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
+
+  // Wake-up Check: Re-validate session when window regains focus
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible' && user) {
+        console.log('[Wake-Up] App visível, a validar sessão...');
+        const { data, error } = await (await import('./lib/supabase')).supabase.auth.getSession();
+        if (error || !data.session) {
+          console.warn('[Wake-Up] Sessão expirada ou inválida, a redirecionar...');
+          window.location.reload();
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [user]);
 
   if (!checkSupabaseConfig()) {
     return (

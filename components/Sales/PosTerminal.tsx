@@ -49,6 +49,44 @@ export const PosTerminal = ({ session, tenantId, user, onUpdateSession, tenantSt
         tenantStatus?.allow_negative_stock || false
     );
 
+    const [isScanning, setIsScanning] = useState(false);
+
+    useEffect(() => {
+        let scanner: any = null;
+        if (isScanning) {
+            import('html5-qrcode').then(({ Html5QrcodeScanner }) => {
+                scanner = new Html5QrcodeScanner("reader", {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                    aspectRatio: 1.0
+                }, false);
+                scanner.render((decodedText: string) => {
+                    const product = filteredProducts.find(p => p.sku === decodedText);
+                    if (product) {
+                        addDbProduct(product);
+                        setIsScanning(false);
+                        scanner.clear();
+                    } else {
+                        setSearchProd(decodedText);
+                        setIsScanning(false);
+                        scanner.clear();
+                    }
+                }, (error: any) => {
+                    // Fallback silencioso para erros de frame
+                });
+            }).catch(err => {
+                console.error("Erro ao carregar scanner:", err);
+                alert("Não foi possível aceder à câmara. Verifique as permissões do browser ou utilize a pesquisa manual.");
+                setIsScanning(false);
+            });
+        }
+        return () => {
+            if (scanner) {
+                try { scanner.clear(); } catch (e) { }
+            }
+        };
+    }, [isScanning]);
+
     const checkout = async (format: 'A4' | 'THERMAL') => {
         if (items.length === 0) return alert('Adicione artigos à venda antes de faturar.');
         if (!session || !supabase || !tenantId) return alert('Não existe um caixa aberto/Tenant ID.');
@@ -263,13 +301,29 @@ export const PosTerminal = ({ session, tenantId, user, onUpdateSession, tenantSt
                                 <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
                                 <input
                                     type="text"
-                                    className="w-full pl-10 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500 outline-none transition-all shadow-inner"
+                                    className="w-full pl-10 pr-12 py-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500 outline-none transition-all shadow-inner"
                                     placeholder="Nome, Código Barras..."
                                     value={searchProd}
                                     onChange={e => setSearchProd(e.target.value)}
                                     autoFocus
                                 />
+                                <button
+                                    onClick={() => setIsScanning(!isScanning)}
+                                    className={`absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-lg flex items-center justify-center transition-all ${isScanning ? 'bg-rose-500 text-white' : 'bg-white text-emerald-600 border border-slate-100 shadow-sm hover:bg-emerald-50'}`}
+                                >
+                                    <i className={`fas ${isScanning ? 'fa-times' : 'fa-camera'}`}></i>
+                                </button>
                             </div>
+
+                            {/* Scanner Viewport */}
+                            {isScanning && (
+                                <div className="mt-4 rounded-2xl overflow-hidden border-2 border-emerald-500 animate-in zoom-in duration-300">
+                                    <div id="reader"></div>
+                                    <p className="text-[10px] font-black text-center py-2 bg-emerald-500 text-white uppercase tracking-widest">
+                                        Aponte para o Código de Barras
+                                    </p>
+                                </div>
+                            )}
 
                             {/* Fast Results List */}
                             {searchProd && (
@@ -309,7 +363,7 @@ export const PosTerminal = ({ session, tenantId, user, onUpdateSession, tenantSt
                                 />
                                 <div className="flex gap-2">
                                     <input
-                                        type="number"
+                                        inputMode="decimal"
                                         className="w-24 px-4 py-3 bg-slate-800 border-0 rounded-xl outline-none text-xs font-bold text-center text-white placeholder-slate-500"
                                         placeholder="Qtd"
                                         min="1"
@@ -318,6 +372,7 @@ export const PosTerminal = ({ session, tenantId, user, onUpdateSession, tenantSt
                                     />
                                     <input
                                         type="number"
+                                        inputMode="decimal"
                                         className="flex-1 px-4 py-3 bg-slate-800 border-0 rounded-xl outline-none text-xs font-bold text-slate-300 placeholder-slate-500 border-l-2 border-l-slate-700"
                                         placeholder="P/Unit KZ"
                                         value={newItemPrice}
@@ -374,6 +429,7 @@ export const PosTerminal = ({ session, tenantId, user, onUpdateSession, tenantSt
                                             <span className="block text-[9px] uppercase tracking-widest text-slate-400 mb-1">Aplicar Desc.</span>
                                             <input
                                                 type="number"
+                                                inputMode="decimal"
                                                 className="w-full text-xs font-bold bg-white border border-slate-200 rounded p-1 text-right focus:border-indigo-400 outline-none"
                                                 min="0"
                                                 value={item.discount}

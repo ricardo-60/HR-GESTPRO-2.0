@@ -31,6 +31,7 @@ export const Sidebar: React.FC<{
     { id: 'saft', label: 'Exportar SAFT-AO', icon: 'fa-file-export', roles: [UserRole.MASTER, UserRole.ADMIN], path: 'saft' },
     { id: 'keys', label: 'Chaves AGT', icon: 'fa-key', roles: [UserRole.MASTER, UserRole.ADMIN], path: 'keys' },
     { id: 'cfg', label: 'Configurações', icon: 'fa-cog', roles: [UserRole.MASTER, UserRole.ADMIN], path: 'settings' },
+    { id: 'help', label: 'Ajuda & Suporte', icon: 'fa-question-circle', roles: [UserRole.MASTER, UserRole.ADMIN, UserRole.RH, UserRole.FINANCE, UserRole.SALES], path: 'help' },
   ];
 
   const filteredItems = NAV_ITEMS.filter(item => role && item.roles.includes(role));

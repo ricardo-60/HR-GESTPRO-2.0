@@ -46,15 +46,13 @@ export const useInventory = (tenantId: string | null) => {
                 p_quantity: quantity
             });
 
-            // Note: If RPC doesn't exist yet, we'll use a standard update. 
-            // Better to use a function to ensure atomicity.
             if (updateError) {
                 const product = products.find(p => p.id === productId);
                 if (!product) throw new Error('Product not found');
 
                 const { error: directError } = await supabase
                     .from('products')
-                    .update({ stock_current: product.stock_current + quantity })
+                    .update({ stock_current: (product.stock_current || 0) + quantity })
                     .eq('id', productId);
                 if (directError) throw directError;
             }
@@ -79,6 +77,49 @@ export const useInventory = (tenantId: string | null) => {
         }
     };
 
+    const createProduct = async (productData: Partial<Product>) => {
+        if (!tenantId || !supabase) return;
+        setLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('products')
+                .insert([{ ...productData, tenant_id: tenantId }])
+                .select()
+                .single();
+
+            if (error) throw error;
+            await fetchInventory();
+            return { success: true, data };
+        } catch (err: any) {
+            setError(err.message);
+            return { success: false, error: err.message };
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const updateProduct = async (productId: string, productData: Partial<Product>) => {
+        if (!tenantId || !supabase) return;
+        setLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('products')
+                .update(productData)
+                .eq('id', productId)
+                .select()
+                .single();
+
+            if (error) throw error;
+            await fetchInventory();
+            return { success: true, data };
+        } catch (err: any) {
+            setError(err.message);
+            return { success: false, error: err.message };
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
         fetchInventory();
     }, [tenantId]);
@@ -89,6 +130,8 @@ export const useInventory = (tenantId: string | null) => {
         loading,
         error,
         fetchInventory,
-        addStockEntry
+        addStockEntry,
+        createProduct,
+        updateProduct
     };
 };
