@@ -31,7 +31,40 @@ export interface Tenant {
   bank_name?: string;
   bank_account?: string;
   bank_iban?: string;
-  tax_regime?: string;
+  tax_regime?: 'Exclusion' | 'General';
+  vat_number?: string;
+  allow_negative_stock?: boolean;
+}
+
+export interface Product {
+  id: string;
+  tenant_id: string;
+  sku?: string;
+  name: string;
+  description?: string;
+  unit_price: number;
+  cost_price: number;
+  average_cost: number;
+  stock_current: number;
+  stock_min: number;
+  stock_max: number;
+  is_active: boolean;
+  is_exempt: boolean;
+  exemption_reason?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface InventoryLog {
+  id: string;
+  tenant_id: string;
+  product_id: string;
+  quantity: number;
+  type: 'IN' | 'OUT';
+  reason: string;
+  operator_id?: string;
+  cost_at_time?: number;
+  created_at?: string;
 }
 
 export interface UserProfile {
@@ -48,6 +81,8 @@ export interface TenantStatusInfo {
   status: TenantStatus;
   company_name: string;
   trial_end_date?: string;
+  tax_regime?: 'Exclusion' | 'General';
+  allow_negative_stock?: boolean;
 }
 
 export interface AuthContextType {
@@ -58,4 +93,48 @@ export interface AuthContextType {
   tenantStatus: TenantStatusInfo | null;
   loading: boolean;
   signOut: () => Promise<void>;
+}
+
+export interface Supplier {
+  id: string;
+  tenant_id: string;
+  name: string;
+  nif?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  created_at?: string;
+}
+
+export interface PurchaseOrder {
+  id: string;
+  tenant_id: string;
+  supplier_id: string;
+  order_no: string;
+  purchase_date: string;
+  status: 'draft' | 'finalized';
+  total_amount: number;
+  notes?: string;
+  created_at?: string;
+}
+
+export interface PurchaseItem {
+  id: string;
+  purchase_order_id: string;
+  product_id: string;
+  quantity: number;
+  cost_price: number;
+  total: number;
+}
+
+export interface AccountPayable {
+  id: string;
+  tenant_id: string;
+  purchase_order_id?: string;
+  supplier_id: string;
+  description: string;
+  amount: number;
+  due_date: string;
+  status: 'pending' | 'paid' | 'overdue';
+  paid_at?: string;
 }

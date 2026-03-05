@@ -53,13 +53,13 @@ const Dashboard: React.FC<DashboardProps> = ({ variant }) => {
         };
       case 'finance':
         return {
-          title: 'Finance & Billing',
-          subtitle: `Entity: ${tenantStatus?.company_name || 'Organization'}`,
+          title: 'Financeiro & Compras',
+          subtitle: `Entidade: ${tenantStatus?.company_name || 'Organização'}`,
           stats: [
-            { title: 'Monthly Revenue', value: '84.500 KZ', icon: 'fa-money-bill-wave', color: 'bg-emerald-600', trend: '+5.4%' },
-            { title: 'Invoices Due', value: '12.300 KZ', icon: 'fa-file-invoice', color: 'bg-rose-500' },
-            { title: 'Available Cash', value: '42.000 KZ', icon: 'fa-wallet', color: 'bg-indigo-500' },
-            { title: 'Tax Provision', value: '18.250 KZ', icon: 'fa-landmark', color: 'bg-slate-700' }
+            { title: 'Vendas (Mês)', value: '84.500 KZ', icon: 'fa-chart-line', color: 'bg-emerald-600', trend: '+5.4%' },
+            { title: 'Contas a Pagar', value: '32.100 KZ', icon: 'fa-file-invoice-dollar', color: 'bg-rose-500', trend: '+12%' },
+            { title: 'Compras (Mês)', value: '45.000 KZ', icon: 'fa-shopping-cart', color: 'bg-indigo-500' },
+            { title: 'Pendente (IVA)', value: '11.250 KZ', icon: 'fa-landmark', color: 'bg-slate-700' }
           ]
         };
       default:

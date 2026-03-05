@@ -89,7 +89,10 @@ export const generateInvoiceA4 = async (invoice: InvoiceData, tenant: Tenant) =>
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     let hY = 25;
-    if (tenant.tax_regime) { doc.text(tenant.tax_regime, 55, hY); hY += 5; }
+    if (tenant.tax_regime) {
+        const regimeLabel = tenant.tax_regime === 'General' ? 'Regime Geral' : 'Regime de Exclusão';
+        doc.text(regimeLabel, 55, hY); hY += 5;
+    }
     doc.text(`NIF: ${tenant.tax_id || 'N/A'}`, 55, hY); hY += 5;
     if (tenant.contact_email) { doc.text(`Email: ${tenant.contact_email}`, 55, hY); hY += 5; }
     if (tenant.address) { doc.text(`Endereço: ${tenant.address}`, 55, hY); hY += 5; }
@@ -266,10 +269,10 @@ export const generateInvoiceA4 = async (invoice: InvoiceData, tenant: Tenant) =>
     // OBSERVAÇÕES E RODAPÉ AGT
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
-    const regime = tenant.tax_regime || 'Regime Simplificado';
+    const regime = tenant.tax_regime === 'General' ? 'Regime Geral' : 'Regime de Exclusão';
     let observation = `Observações: Enquadrado no ${regime}.`;
     if (invoice.tax_total === 0) {
-        observation += ' Isento ao abrigo do Art. 12.º do CIVA / Código M00.';
+        observation += ' Isento ao abrigo do Art. 12.º do CIVA / Cod. M01 (Exclusão).';
     }
     doc.text(observation, 14, currentY);
 

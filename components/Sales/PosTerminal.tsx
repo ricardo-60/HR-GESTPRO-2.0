@@ -41,12 +41,32 @@ export const PosTerminal = ({ session, tenantId, user, onUpdateSession, tenantSt
         removeItem,
         applyDiscount,
         resetCheckout
-    } = usePosTerminal(tenantId, session, !!tenantStatus?.is_iva_enabled);
+    } = usePosTerminal(
+        tenantId,
+        session,
+        !!tenantStatus?.is_iva_enabled,
+        tenantStatus?.tax_regime || 'Exclusion',
+        tenantStatus?.allow_negative_stock || false
+    );
 
     const checkout = async (format: 'A4' | 'THERMAL') => {
         if (items.length === 0) return alert('Adicione artigos à venda antes de faturar.');
         if (!session || !supabase || !tenantId) return alert('Não existe um caixa aberto/Tenant ID.');
         if (paymentMethod === 'credit' && !dueDate) return alert('Selecione a data de vencimento para venda a crédito.');
+
+        const currentTenant: Tenant = {
+            id: tenantStatus?.tenant_id || '',
+            company_name: tenantStatus?.company_name || 'Empresa Local',
+            tax_id: tenantStatus?.tax_id || '123456789',
+            status: tenantStatus?.status || ('active' as any),
+            plan_tier: 'Pro',
+            address: tenantStatus?.address || 'Luanda, Angola',
+            phone: tenantStatus?.phone || '+244 923 000 000',
+            bank_name: tenantStatus?.bank_name || 'BAI',
+            bank_account: tenantStatus?.bank_account || '',
+            bank_iban: tenantStatus?.bank_iban || '',
+            tax_regime: tenantStatus?.tax_regime || 'Exclusion'
+        };
 
         try {
             // 1. Get next invoice number safely
@@ -90,19 +110,18 @@ export const PosTerminal = ({ session, tenantId, user, onUpdateSession, tenantSt
             const { error: itemsError } = await supabase.from('invoice_items').insert(itemsToInsert);
             if (itemsError) throw itemsError;
 
-            // 4. Update session running totals (only for actual Sales, not Proformas)
+            // 4. Update session running totals
             if (docType !== 'PF') {
                 await supabase.from('pos_sessions').update({
                     total_sales: session.total_sales + total,
                     invoices_count: session.invoices_count + 1
                 }).eq('id', session.id);
-                // Trigger refresh in parent
                 onUpdateSession();
             }
 
             // 5. Build PDF Logic
             const invoiceData: InvoiceData = {
-                id: invoiceRecord?.invoice_no || `OFFLINE-${Date.now()}`,
+                id: invoiceRecord?.invoice_no || `DOC-${Date.now()}`,
                 type: docType === 'FT' ? 'FATURA / RECIBO' : 'FATURA PROFORMA',
                 client_name: clientName,
                 client_tax_id: clientNif,
@@ -120,20 +139,6 @@ export const PosTerminal = ({ session, tenantId, user, onUpdateSession, tenantSt
                 total
             };
 
-            const currentTenant: Tenant = {
-                id: tenantStatus?.tenant_id || '',
-                company_name: tenantStatus?.company_name || 'Empresa Local',
-                tax_id: '123456789',
-                status: tenantStatus?.status || 'active' as any,
-                plan_tier: 'Pro',
-                address: 'Luanda, Angola',
-                phone: '+244 923 000 000',
-                bank_name: 'Banco Angolano de Investimentos (BAI)',
-                bank_account: '1234 5678 9012',
-                bank_iban: 'AO06 0000 0000 0000 0000 0000 00',
-                tax_regime: tenantStatus?.is_iva_enabled ? 'Regime Geral (IVA 14%)' : 'Regime de Exclusão (Isento)' // Injectar regime baseado num toggle
-            };
-
             if (format === 'A4') {
                 const doc = await generateInvoiceA4(invoiceData, currentTenant);
                 doc.save(`${invoiceData.id.replace('/', '_')}.pdf`);
@@ -148,7 +153,6 @@ export const PosTerminal = ({ session, tenantId, user, onUpdateSession, tenantSt
         } catch (error: any) {
             console.error('Erro de Supabase Online, a entrar em Cache Offline...', error);
 
-            // Queue Offline Request mechanism
             offlineSync.queueInvoice({
                 tenant_id: tenantId,
                 session_id: session.id,
@@ -158,7 +162,6 @@ export const PosTerminal = ({ session, tenantId, user, onUpdateSession, tenantSt
                 total: total
             });
 
-            // Gerar PDF Offline para entregar ao cliente na mesma
             const offlineInvoiceData: InvoiceData = {
                 id: `OFFLINE-${Date.now()}`,
                 type: docType === 'FT' ? 'FATURA / RECIBO' : 'FATURA PROFORMA',
@@ -176,20 +179,6 @@ export const PosTerminal = ({ session, tenantId, user, onUpdateSession, tenantSt
                 tax_total: tax,
                 retention: 0,
                 total
-            };
-
-            const currentTenant: Tenant = {
-                id: tenantStatus?.tenant_id || '',
-                company_name: tenantStatus?.company_name || 'Empresa Local',
-                tax_id: tenantStatus?.tax_id || '123456789',
-                status: tenantStatus?.status || 'active' as any,
-                plan_tier: 'Pro',
-                address: 'Luanda, Angola',
-                phone: '+244 923 000 000',
-                bank_name: tenantStatus?.bank_name || 'BAI',
-                bank_account: tenantStatus?.bank_account || '',
-                bank_iban: tenantStatus?.bank_iban || '',
-                tax_regime: tenantStatus?.is_iva_enabled ? 'Regime Geral (IVA 14%)' : 'Regime de Exclusão (Isento)'
             };
 
             if (format === 'A4') {
@@ -293,7 +282,7 @@ export const PosTerminal = ({ session, tenantId, user, onUpdateSession, tenantSt
                                         >
                                             <div>
                                                 <div className="font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">{p.name}</div>
-                                                <div className="text-[10px] text-slate-400">Stock: {p.stock_quantity | 0}</div>
+                                                <div className="text-[10px] text-slate-400">Stock: {p.stock_current | 0}</div>
                                             </div>
                                             <div className="font-black text-slate-800">
                                                 {Number(p.unit_price).toFixed(2)}
@@ -472,7 +461,7 @@ export const PosTerminal = ({ session, tenantId, user, onUpdateSession, tenantSt
                                     <span className="text-rose-400">-{globalDiscount.toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between text-sm font-bold items-center border-b border-slate-800 pb-3">
-                                    <span className="text-slate-400"><i className="fas fa-university mr-2"></i>IVA (14%)</span>
+                                    <span className="text-slate-400"><i className="fas fa-university mr-2"></i>IVA ({tenantStatus?.tax_regime === 'General' ? '14%' : 'Isento'})</span>
                                     <span>{tax.toFixed(2)}</span>
                                 </div>
                             </div>

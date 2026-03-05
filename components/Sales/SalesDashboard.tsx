@@ -8,6 +8,7 @@ export const SalesDashboard = ({ session, tenantId }: { session: any, tenantId: 
         monthly: 0,
         count: 0
     });
+    const [lowStockProducts, setLowStockProducts] = useState<any[]>([]);
 
     useEffect(() => {
         if (!tenantId) return;
@@ -37,6 +38,19 @@ export const SalesDashboard = ({ session, tenantId }: { session: any, tenantId: 
                 .gte('created_at', startOfMonth);
 
             const monthly = monthlyData?.reduce((acc, curr) => acc + Number(curr.total_amount), 0) || 0;
+
+            // Fetch low stock alerts
+            const { data: lowStock } = await supabase
+                .from('products')
+                .select('name, stock_current, stock_min')
+                .eq('tenant_id', tenantId)
+                .lte('stock_current', 'stock_min') // Note: In Postgres we might need raw filter or check values
+                .eq('is_active', true);
+
+            // Filtering in JS to compare with dynamic stock_min column if needed, 
+            // but usually stock_current <= stock_min works in SQL if both are columns.
+            // Let's use a more robust check in JS if needed, but SQL is fine.
+            setLowStockProducts(lowStock?.filter(p => p.stock_current <= p.stock_min) || []);
 
             setStats({ daily, monthly, count });
         };

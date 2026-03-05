@@ -9,6 +9,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<any | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [tenantStatus, setTenantStatus] = useState<TenantStatusInfo | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchData = async (userId: string) => {
@@ -24,7 +25,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (pErr) throw pErr;
 
       if (!pData) {
-        console.warn('AuthContext: No profile found for user', userId);
+        console.error('CRITICAL: No profile found for authenticated user', userId);
+        setError('O seu perfil não foi encontrado. Contacte o suporte.');
         setProfile(null);
         return;
       }
@@ -35,7 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (pData?.tenant_id) {
         const { data: tData, error: tErr } = await supabase
           .from('tenants')
-          .select('id, company_name, status, trial_end_date')
+          .select('id, company_name, status, trial_end_date, tax_regime, allow_negative_stock')
           .eq('id', pData.tenant_id)
           .maybeSingle();
 
@@ -56,7 +58,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             tenant_id: tData.id,
             company_name: tData.company_name,
             status: computedStatus,
-            trial_end_date: tData.trial_end_date
+            trial_end_date: tData.trial_end_date,
+            tax_regime: tData.tax_regime as any,
+            allow_negative_stock: tData.allow_negative_stock
           });
         } else {
           setTenantStatus(null);
@@ -127,6 +131,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       role: profile?.role || null,
       tenantId: profile?.tenant_id || null,
       tenantStatus,
+      error,
       loading,
       signOut
     }}>

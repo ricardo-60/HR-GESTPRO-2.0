@@ -42,6 +42,10 @@ export function numeroParaExtenso(valor: number): string {
 
     let extenso = '';
 
+    if (valorInteiro === 0 && centimos > 0) {
+        extenso = 'Zero Kwanzas';
+    }
+
     const milhoes = Math.floor(valorInteiro / 1000000);
     const milhares = Math.floor((valorInteiro % 1000000) / 1000);
     const restos = valorInteiro % 1000;
@@ -76,7 +80,7 @@ export function numeroParaExtenso(valor: number): string {
 
     // Tratar os Cêntimos
     if (centimos > 0) {
-        if (valorInteiro > 0) extenso += ' e ';
+        if (extenso) extenso += ' e ';
         extenso += converterGrupo(centimos) + (centimos === 1 ? ' Cêntimo' : ' Cêntimos');
     }
 

@@ -24,6 +24,9 @@ export const Sidebar: React.FC<{
     { id: 'companies', label: 'Empresas', icon: 'fa-building', roles: [UserRole.MASTER, UserRole.ADMIN], path: 'companies' },
     { id: 'users', label: 'Utilizadores', icon: 'fa-user-shield', roles: [UserRole.MASTER, UserRole.ADMIN], path: 'users' },
     { id: 'rh', label: 'Recursos Humanos', icon: 'fa-users', roles: [UserRole.MASTER, UserRole.ADMIN, UserRole.RH], path: 'rh' },
+    { id: 'sup', label: 'Fornecedores', icon: 'fa-truck-loading', roles: [UserRole.MASTER, UserRole.ADMIN, UserRole.FINANCE], path: 'suppliers' },
+    { id: 'pur', label: 'Compras / Stock', icon: 'fa-cart-arrow-down', roles: [UserRole.MASTER, UserRole.ADMIN, UserRole.FINANCE], path: 'purchases' },
+    { id: 'rep', label: 'Relatórios BI', icon: 'fa-chart-bar', roles: [UserRole.MASTER, UserRole.ADMIN, UserRole.FINANCE], path: 'reports' },
     { id: 'fin', label: 'Faturação', icon: 'fa-file-invoice-dollar', roles: [UserRole.MASTER, UserRole.ADMIN, UserRole.FINANCE], path: 'finance' },
     { id: 'cfg', label: 'Configurações', icon: 'fa-cog', roles: [UserRole.MASTER, UserRole.ADMIN], path: 'settings' },
   ];
@@ -45,8 +48,8 @@ export const Sidebar: React.FC<{
             key={item.id}
             onClick={() => onNavigate(item.path)}
             className={`flex items-center space-x-3 w-full p-3 rounded-xl cursor-pointer transition-all group ${currentPath === item.path
-                ? 'bg-indigo-600 text-white'
-                : 'hover:bg-slate-800 text-slate-400 hover:text-white'
+              ? 'bg-indigo-600 text-white'
+              : 'hover:bg-slate-800 text-slate-400 hover:text-white'
               }`}
           >
             <i className={`fas ${item.icon} w-5 text-center group-hover:scale-110 transition-transform`}></i>

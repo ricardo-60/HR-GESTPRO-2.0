@@ -14,6 +14,9 @@ const SalesManagement = lazy(() => import('./pages/SalesManagement'));
 const HRManagement = lazy(() => import('./pages/HRManagement'));
 const ExpiredLicense = lazy(() => import('./pages/ExpiredLicense'));
 const MasterSettings = lazy(() => import('./pages/MasterSettings'));
+const Suppliers = lazy(() => import('./pages/Suppliers'));
+const PurchaseOrders = lazy(() => import('./pages/PurchaseOrders'));
+const Reports = lazy(() => import('./pages/Reports'));
 
 /**
  * MainRouter: Core SPA Navigation Logic.
@@ -45,6 +48,12 @@ const MainRouter: React.FC = () => {
         return <SalesManagement />;
       case 'finance':
         return <Dashboard variant="finance" />;
+      case 'purchases':
+        return <PurchaseOrders />;
+      case 'suppliers':
+        return <Suppliers />;
+      case 'reports':
+        return <Reports />;
       case 'settings':
         if (role === UserRole.MASTER) return <MasterSettings />;
         return <Dashboard variant="admin" />;

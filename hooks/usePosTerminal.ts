@@ -15,7 +15,13 @@ export interface PosItem extends LibInvoiceItem {
     discount: number;
 }
 
-export const usePosTerminal = (tenantId: string, session: PosSession | null, isIvaEnabled: boolean) => {
+export const usePosTerminal = (
+    tenantId: string,
+    session: PosSession | null,
+    isIvaEnabled: boolean,
+    taxRegime: 'Exclusion' | 'General' = 'Exclusion',
+    allowNegativeStock: boolean = false
+) => {
     // Core POS State
     const [docType, setDocType] = useState<'FT' | 'PF'>('FT');
     const [paymentMethod, setPaymentMethod] = useState('cash'); // cash, transfer, card, mixed, credit
@@ -80,8 +86,23 @@ export const usePosTerminal = (tenantId: string, session: PosSession | null, isI
     };
 
     const addDbProduct = (prod: any) => {
+        // Validation: Stock Check
+        if (!allowNegativeStock && prod.stock_current <= 0) {
+            alert(`Stock insuficiente para "${prod.name}". Stock atual: ${prod.stock_current}`);
+            return;
+        }
+
+        const effectiveTaxRate = taxRegime === 'General' ? 14 : 0;
+        const exemptionCode = taxRegime === 'Exclusion' ? 'M00' : '';
+
         const existing = items.find(i => i.product_id === prod.id);
         if (existing) {
+            // Check if incrementing would exceed stock
+            if (!allowNegativeStock && (existing.quantity + 1) > prod.stock_current) {
+                alert(`Não pode vender mais do que o stock disponível (${prod.stock_current}).`);
+                return;
+            }
+
             setItems(items.map(i => i.product_id === prod.id ? {
                 ...i,
                 quantity: i.quantity + 1,
@@ -97,8 +118,8 @@ export const usePosTerminal = (tenantId: string, session: PosSession | null, isI
                 quantity: 1,
                 unit_price: Number(prod.unit_price),
                 discount: 0,
-                tax_rate: isIvaEnabled ? 14 : 0,
-                exemption_code: isIvaEnabled ? '' : 'M00',
+                tax_rate: effectiveTaxRate,
+                exemption_code: exemptionCode,
                 total: Number(prod.unit_price)
             }]);
         }
@@ -107,6 +128,9 @@ export const usePosTerminal = (tenantId: string, session: PosSession | null, isI
 
     const addManualItem = () => {
         if (!newItemName) return;
+        const effectiveTaxRate = taxRegime === 'General' ? 14 : 0;
+        const exemptionCode = taxRegime === 'Exclusion' ? 'M00' : '';
+
         setItems([...items, {
             id: Math.random().toString(),
             code: 'M-000',
@@ -115,8 +139,8 @@ export const usePosTerminal = (tenantId: string, session: PosSession | null, isI
             quantity: newItemQty,
             unit_price: newItemPrice,
             discount: 0,
-            tax_rate: isIvaEnabled ? 14 : 0,
-            exemption_code: isIvaEnabled ? '' : 'M00',
+            tax_rate: effectiveTaxRate,
+            exemption_code: exemptionCode,
             total: (newItemQty * newItemPrice)
         }]);
         setNewItemName('');
@@ -149,7 +173,8 @@ export const usePosTerminal = (tenantId: string, session: PosSession | null, isI
     const unTaxedSubtotal = items.reduce((acc, curr) => acc + (curr.quantity * curr.unit_price), 0);
     const globalDiscount = items.reduce((acc, curr) => acc + curr.discount, 0);
     const subtotal = unTaxedSubtotal - globalDiscount;
-    const tax = isIvaEnabled ? (subtotal * 0.14) : 0; // 14% IVA condicional
+    const effectiveTaxRate = taxRegime === 'General' ? 0.14 : 0;
+    const tax = subtotal * effectiveTaxRate;
     const total = subtotal + tax;
 
     const filteredProducts = products.filter(p =>

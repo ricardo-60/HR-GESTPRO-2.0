@@ -87,19 +87,10 @@ const UserManagement: React.FC = () => {
 
         if (updateError) throw updateError;
       } else {
-        // Create new profile record
-        const { error: profileError } = await supabase
-          .from('user_profiles')
-          .insert([{
-            email: formData.email,
-            full_name: formData.full_name,
-            role: formData.role,
-            tenant_id: tenantId,
-            can_close_sales: formData.can_close_sales
-          }]);
-
-        if (profileError) throw profileError;
-        // Note: Real invite system would trigger an edge function here
+        // [IMPORTANT] In a real SaaS, this should call an Edge Function 
+        // to create an Auth user and THEN the profile.
+        // For now, we inform the user to use the Register page or a proper invite.
+        throw new Error('A criação direta de utilizadores sem conta de acesso (Auth) não é permitida. Por favor, solicite ao utilizador que se registe ou utilize o sistema de convites (ainda em implementação).');
       }
 
       closePortal();

@@ -19,8 +19,10 @@ export const offlineSync = {
             queue.push(invoice);
             localStorage.setItem(SYNC_KEY, JSON.stringify(queue));
             console.log('Factura faturada offline com sucesso:', invoice);
+            return true;
         } catch (error) {
             console.error('Falha ao gravar na queue offline', error);
+            return false;
         }
     },
 
