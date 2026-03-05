@@ -1,0 +1,5 @@
+{
+  "name": "HR-GESTPRO-2.0",
+  "description": "Production-ready SaaS boilerplate for Enterprise HR Management. Built with React 19, Supabase, and Tailwind CSS. Features multi-tenant isolation and role-based access control.",
+  "requestFramePermissions": []
+}

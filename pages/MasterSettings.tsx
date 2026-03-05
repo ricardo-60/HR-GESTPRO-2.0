@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { downloadProformaPDF } from '../lib/ProformaGenerator';
+import { ManualGenerator } from '../lib/ManualGenerator';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -168,6 +169,11 @@ const MasterSettings: React.FC = () => {
         setSavingIban(false);
     };
 
+    const handleGenerateManual = () => {
+        const gen = new ManualGenerator();
+        gen.download();
+    };
+
     const tabs = [
         { id: 'tenants', label: 'Empresas', icon: Users },
         { id: 'keys', label: 'Chaves', icon: KeyRound },
@@ -213,8 +219,8 @@ const MasterSettings: React.FC = () => {
                             key={t.id}
                             onClick={() => setTab(t.id)}
                             className={`flex items-center gap-2 px-6 py-4 text-sm font-bold transition-all relative ${tab === t.id
-                                    ? 'text-indigo-600 bg-indigo-50/50'
-                                    : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+                                ? 'text-indigo-600 bg-indigo-50/50'
+                                : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
                                 }`}
                         >
                             <t.icon className="w-4 h-4" />
@@ -359,8 +365,8 @@ const MasterSettings: React.FC = () => {
                                                 <td className="py-3 pr-4 text-xs text-slate-500">{k.duration_days === 365 ? '1 Ano' : `${k.duration_days} Dias`}</td>
                                                 <td className="py-3 pr-4">
                                                     <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${k.status === 'unused' ? 'bg-emerald-100 text-emerald-700' :
-                                                            k.status === 'used' ? 'bg-slate-100 text-slate-500' :
-                                                                'bg-red-100 text-red-600'
+                                                        k.status === 'used' ? 'bg-slate-100 text-slate-500' :
+                                                            'bg-red-100 text-red-600'
                                                         }`}>
                                                         {k.status === 'unused' ? 'disponível' : k.status}
                                                     </span>
@@ -446,11 +452,27 @@ const MasterSettings: React.FC = () => {
                             <button
                                 onClick={saveIban}
                                 disabled={savingIban}
-                                className="flex items-center gap-2 bg-slate-900 text-white font-bold px-6 py-3 rounded-xl transition-all hover:bg-black"
+                                className="flex items-center gap-2 bg-slate-900 text-white font-bold px-6 py-3 rounded-xl transition-all hover:bg-black w-full"
                             >
                                 {savingIban ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
                                 {savingIban ? 'A guardar...' : 'Guardar IBAN'}
                             </button>
+
+                            <div className="pt-8 border-t border-slate-100">
+                                <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Documentação Técnica</h4>
+                                <button
+                                    onClick={handleGenerateManual}
+                                    className="flex items-center gap-3 bg-white border-2 border-indigo-100 text-indigo-600 font-black px-6 py-4 rounded-2xl transition-all hover:border-indigo-600 hover:bg-indigo-50 w-full group shadow-sm shadow-indigo-100"
+                                >
+                                    <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                                        <FileText className="w-5 h-5" />
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="text-sm">Gerar Manual PDF Atualizado</p>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Exportação White-label 4K</p>
+                                    </div>
+                                </button>
+                            </div>
                         </div>
                     )}
 
