@@ -1,7 +1,10 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../AuthContext';
 import { UserRole } from '../types';
+import LicenseActivationModal from '../components/LicenseActivationModal';
+import { ShieldAlert, KeyRound, Timer, Download } from 'lucide-react';
+import { downloadProformaPDF } from '../lib/ProformaGenerator';
+import { supabase } from '../lib/supabase';
 
 const StatCard: React.FC<{ title: string; value: string; icon: string; color: string; trend?: string }> = ({ title, value, icon, color, trend }) => (
   <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
@@ -25,7 +28,36 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ variant }) => {
-  const { tenantStatus, user } = useAuth();
+  const { tenantStatus, user, signOut } = useAuth();
+  const [showActivation, setShowActivation] = useState(false);
+
+  // Cálculo de dias para expiração
+  const expiryDate = tenantStatus?.license_expires_at || tenantStatus?.trial_end_date;
+  const daysRemaining = expiryDate
+    ? Math.ceil((new Date(expiryDate).getTime() - Date.now()) / 86400000)
+    : 0;
+
+  const handleDownloadInvoice = async () => {
+    if (!tenantStatus?.tenant_id) return;
+
+    // Buscar IBAN global
+    const { data: sData } = await supabase!
+      .from('system_settings')
+      .select('setting_value')
+      .eq('setting_key', 'global_iban')
+      .maybeSingle();
+
+    downloadProformaPDF({
+      invoiceRef: `PRF-${new Date().getFullYear()}-${tenantStatus.tenant_id.substring(0, 6).toUpperCase()}`,
+      dueDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
+      clientName: tenantStatus.company_name,
+      planType: tenantStatus.plan_type || 'Business',
+      durationDays: 365,
+      amountAOA: 150000,
+      globalIban: sData?.setting_value,
+      newExpiresAt: new Date(Date.now() + 372 * 86400000).toISOString()
+    });
+  };
 
   const getDashboardData = () => {
     switch (variant) {
@@ -80,6 +112,59 @@ const Dashboard: React.FC<DashboardProps> = ({ variant }) => {
 
   return (
     <div className="space-y-10">
+      {/* Banner de Expiração */}
+      {expiryDate && daysRemaining >= 0 && daysRemaining <= 14 && (
+        <div className={`flex flex-col md:flex-row items-center justify-between p-6 rounded-[2rem] border animate-in slide-in-from-top-4 duration-500 shadow-xl ${daysRemaining <= 3
+            ? 'bg-red-50 border-red-100'
+            : daysRemaining <= 7
+              ? 'bg-amber-50 border-amber-100'
+              : 'bg-indigo-50 border-indigo-100'
+          }`}>
+          <div className="flex items-center gap-5 mb-4 md:mb-0">
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg ${daysRemaining <= 3 ? 'bg-red-600 shadow-red-200' : 'bg-amber-500 shadow-amber-100'
+              }`}>
+              <ShieldAlert className="w-7 h-7 text-white" />
+            </div>
+            <div>
+              <h3 className={`font-black text-lg ${daysRemaining <= 3 ? 'text-red-900' : 'text-amber-900'}`}>
+                {daysRemaining <= 0 ? 'Licença Expira Hoje!' : `A sua licença expira em ${daysRemaining} dias`}
+              </h3>
+              <p className={`text-sm font-medium ${daysRemaining <= 3 ? 'text-red-700' : 'text-amber-700'}`}>
+                Para evitar a interrupção dos serviços, proceda à renovação.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <button
+              onClick={handleDownloadInvoice}
+              className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-6 py-3 rounded-2xl font-bold text-sm transition-all"
+            >
+              <Download className="w-4 h-4" /> Gerar Proforma
+            </button>
+            <button
+              onClick={() => setShowActivation(true)}
+              className={`flex-1 md:flex-none flex items-center justify-center gap-2 text-white px-8 py-3 rounded-2xl font-bold text-sm transition-all shadow-lg ${daysRemaining <= 3 ? 'bg-red-600 hover:bg-red-700 shadow-red-200' : 'bg-slate-900 hover:bg-black shadow-slate-200'
+                }`}
+            >
+              <KeyRound className="w-4 h-4" /> Ativar Chave
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Ativação */}
+      {showActivation && (
+        <LicenseActivationModal
+          tenantId={tenantStatus?.tenant_id || ''}
+          onClose={() => setShowActivation(false)}
+          onSuccess={() => {
+            setShowActivation(false);
+            window.location.reload();
+          }}
+        />
+      )}
+
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 border-b border-gray-100 pb-10">
         <div>
           <h2 className="text-4xl font-black text-slate-900 tracking-tighter mb-2">{data.title}</h2>

@@ -81,6 +81,8 @@ export interface TenantStatusInfo {
   status: TenantStatus;
   company_name: string;
   trial_end_date?: string;
+  license_expires_at?: string;
+  plan_type?: string;
   tax_regime?: 'Exclusion' | 'General';
   allow_negative_stock?: boolean;
 }

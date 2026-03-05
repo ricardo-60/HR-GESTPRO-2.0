@@ -37,7 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (pData?.tenant_id) {
         const { data: tData, error: tErr } = await supabase
           .from('tenants')
-          .select('id, company_name, status, trial_end_date, tax_regime, allow_negative_stock')
+          .select('id, company_name, status, trial_end_date, license_expires_at, plan_type, tax_regime, allow_negative_stock')
           .eq('id', pData.tenant_id)
           .maybeSingle();
 
@@ -48,10 +48,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (tData) {
           let computedStatus = tData.status;
 
-          // Enforce trial expiration
-          if (computedStatus === 'trial' && tData.trial_end_date) {
-            const isExpired = new Date() > new Date(tData.trial_end_date);
-            if (isExpired) computedStatus = 'expired';
+          // 1. Verificar Expiração (Trial ou Licença Paga)
+          // Prioridade para license_expires_at, se nula usa trial_end_date
+          const expiryDate = tData.license_expires_at || tData.trial_end_date;
+
+          if (expiryDate) {
+            const isExpired = new Date() > new Date(expiryDate);
+            if (isExpired) {
+              computedStatus = 'expired';
+            }
           }
 
           setTenantStatus({
@@ -59,6 +64,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             company_name: tData.company_name,
             status: computedStatus,
             trial_end_date: tData.trial_end_date,
+            license_expires_at: tData.license_expires_at,
+            plan_type: tData.plan_type,
             tax_regime: tData.tax_regime as any,
             allow_negative_stock: tData.allow_negative_stock
           });
