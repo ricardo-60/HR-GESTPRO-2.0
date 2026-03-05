@@ -4,8 +4,9 @@ import { AuthProvider, useAuth } from './AuthContext';
 import { UserRole, TenantStatus } from './types';
 import { checkSupabaseConfig, SUPABASE_URL, SUPABASE_ANON_KEY } from './lib/supabase';
 import Layout from './components/Layout';
-import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
+import LoadingScreen from './components/LoadingScreen';
+const Login = lazy(() => import('./pages/Login'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
 
 // Usando React.lazy apenas para módulos secundários pesados (Code Splitting Otimizado)
 const UserManagement = lazy(() => import('./pages/UserManagement'));
@@ -144,17 +145,7 @@ const AppContent: React.FC = () => {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center">
-        <div className="w-12 h-12 border-[3px] border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
-        <div className="mt-10 text-center">
-          <p className="text-slate-400 font-black uppercase text-[10px] tracking-[0.4em] mb-4">HR-GESTPRO PROD</p>
-          <div className="bg-slate-50 px-4 py-2 rounded-lg border border-slate-100 inline-block">
-            <p className="text-[9px] text-slate-400 font-mono">Endpoint: {SUPABASE_URL}</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (!user) {
@@ -196,7 +187,11 @@ const AppContent: React.FC = () => {
     );
   }
 
-  return <MainRouter />;
+  return (
+    <Suspense fallback={<LoadingScreen />}>
+      <MainRouter />
+    </Suspense>
+  );
 };
 
 const App: React.FC = () => {

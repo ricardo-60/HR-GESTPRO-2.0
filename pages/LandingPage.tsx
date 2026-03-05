@@ -3,6 +3,7 @@ import {
     Download, Globe, Shield, Zap, BarChart3, Users,
     CheckCircle2, ArrowRight, Star, Package
 } from 'lucide-react';
+import PricingSection from '../components/PricingSection';
 
 const GITHUB_REPO = 'ricardo-60/HR-GESTPRO-2.0';
 const DOWNLOAD_URL = `https://github.com/${GITHUB_REPO}/releases/latest/download/HR-GESTPRO-Setup.exe`;
@@ -123,6 +124,9 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
                     ))}
                 </div>
             </section>
+
+            {/* Pricing Section */}
+            <PricingSection onLogin={onLogin} />
 
             {/* Compliance AGT Banner */}
             <section className="max-w-6xl mx-auto px-6 py-10">

@@ -32,21 +32,32 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-    // Ignorar pedidos do Supabase (dinâmicos)
+    // Ignorar pedidos do Supabase (dados dinâmicos via SDK)
     if (event.request.url.includes('supabase.co')) return;
 
-    event.respondWith(
-        caches.match(event.request).then((response) => {
-            return response || fetch(event.request).then((networkResponse) => {
-                // Cachear novos assets dinâmicos (js carregados via lazy)
-                if (event.request.url.startsWith(self.location.origin) && event.request.method === 'GET') {
-                    return caches.open(CACHE_NAME).then((cache) => {
+    // Estratégia: Stale-While-Revalidate para Assets Locais
+    if (event.request.url.startsWith(self.location.origin) && event.request.method === 'GET') {
+        event.respondWith(
+            caches.open(CACHE_NAME).then((cache) => {
+                return cache.match(event.request).then((cachedResponse) => {
+                    const fetchPromise = fetch(event.request).then((networkResponse) => {
+                        // Atualizar cache com a nova versão
                         cache.put(event.request, networkResponse.clone());
                         return networkResponse;
                     });
-                }
-                return networkResponse;
-            });
+
+                    // Retorna cache se existir, senão espera pela rede
+                    return cachedResponse || fetchPromise;
+                });
+            })
+        );
+        return;
+    }
+
+    // Default: Cache First fallthrough
+    event.respondWith(
+        caches.match(event.request).then((response) => {
+            return response || fetch(event.request);
         })
     );
 });

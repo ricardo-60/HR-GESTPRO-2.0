@@ -86,15 +86,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const init = async () => {
       try {
-        // Correctly accessing auth property for getSession
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
           setUser(session.user);
-          await fetchData(session.user.id);
+          // 1. Carregamento Faseado: Carrega o essencial agora, deferimos o resto por 50ms 
+          // para deixar o browser respirar e mostrar a UI/LoadingScreen
+          setTimeout(() => {
+            fetchData(session.user.id);
+          }, 50);
         }
       } catch (e) {
         console.error('Session Init Error', e);
       } finally {
+        // Libertamos o loading principal rápido para mostrar o esqueleto/dashboard
         setLoading(false);
       }
     };

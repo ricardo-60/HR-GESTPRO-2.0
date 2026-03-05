@@ -177,7 +177,7 @@ const StockManagement: React.FC = () => {
                                             <div className="flex items-center gap-4">
                                                 <div className="w-10 h-10 rounded-xl bg-slate-100 overflow-hidden flex items-center justify-center border border-slate-200">
                                                     {p.image_url ? (
-                                                        <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />
+                                                        <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
                                                     ) : (
                                                         <i className="fas fa-box text-slate-300"></i>
                                                     )}
