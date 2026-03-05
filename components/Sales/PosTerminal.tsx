@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { generateInvoiceA4, generateThermalReceipt, InvoiceData, InvoiceItem as LibInvoiceItem } from '../../lib/InvoiceGenerator';
 import { Tenant } from '../../types';
+import { usePosTerminal } from '../../hooks/usePosTerminal';
+import { offlineSync } from '../../lib/offlineSync';
 
 interface PosSession {
     id: string;
@@ -14,133 +16,32 @@ interface PosSession {
 export const PosTerminal = ({ session, tenantId, user, onUpdateSession, tenantStatus, onClose }:
     { session: PosSession, tenantId: string, user: any, onUpdateSession: () => void, tenantStatus: any, onClose: () => void }) => {
 
-    // Core POS State
-    const [docType, setDocType] = useState<'FT' | 'PF'>('FT');
-    const [paymentMethod, setPaymentMethod] = useState('cash'); // cash, transfer, card, mixed, credit
-    const [dueDate, setDueDate] = useState<string>(''); // Para vendas a crédito
-
-    // Search & Filter State
-    const [customers, setCustomers] = useState<any[]>([]);
-    const [products, setProducts] = useState<any[]>([]);
-    const [searchProd, setSearchProd] = useState('');
-    const [loadingData, setLoadingData] = useState(false);
-
-    // Selected Data
-    const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
-    const [clientName, setClientName] = useState('Consumidor Final');
-    const [clientNif, setClientNif] = useState('');
-
-    interface PosItem extends LibInvoiceItem {
-        product_id?: string;
-        discount: number;
-    }
-    const [items, setItems] = useState<PosItem[]>([]);
-
-    // Ad hoc Item State
-    const [newItemName, setNewItemName] = useState('');
-    const [newItemQty, setNewItemQty] = useState(1);
-    const [newItemPrice, setNewItemPrice] = useState(1000);
-
-    // Load Basic Data for the POS
-    useEffect(() => {
-        if (!tenantId) return;
-        const loadInitialData = async () => {
-            setLoadingData(true);
-            const { data: custs } = await supabase.from('customers').select('*').eq('tenant_id', tenantId).limit(20);
-            if (custs) setCustomers(custs);
-
-            const { data: prods } = await supabase.from('products').select('*').eq('tenant_id', tenantId).eq('is_active', true).limit(50);
-            if (prods) setProducts(prods);
-            setLoadingData(false);
-        };
-        loadInitialData();
-    }, [tenantId]);
-
-    const handleSelectCustomer = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const id = e.target.value;
-        if (!id) {
-            setSelectedCustomer(null);
-            setClientName('Consumidor Final');
-            setClientNif('');
-            return;
-        }
-        const cust = customers.find(c => c.id === id);
-        if (cust) {
-            setSelectedCustomer(cust);
-            setClientName(cust.name);
-            setClientNif(cust.tax_id || '');
-        }
-    };
-
-    const addDbProduct = (prod: any) => {
-        const existing = items.find(i => i.product_id === prod.id);
-        if (existing) {
-            setItems(items.map(i => i.product_id === prod.id ? {
-                ...i,
-                quantity: i.quantity + 1,
-                total: (i.quantity + 1) * i.unit_price - i.discount
-            } : i));
-        } else {
-            setItems([...items, {
-                id: Math.random().toString(),
-                product_id: prod.id,
-                code: prod.barcode || `P-${prod.id.substring(0, 4)}`,
-                name: prod.name,
-                lote: prod.lote || '-',
-                quantity: 1,
-                unit_price: Number(prod.unit_price),
-                discount: 0,
-                tax_rate: 14,
-                exemption_code: '',
-                total: Number(prod.unit_price)
-            }]);
-        }
-        setSearchProd('');
-    };
-
-    const addManualItem = () => {
-        if (!newItemName) return;
-        setItems([...items, {
-            id: Math.random().toString(),
-            code: 'M-000',
-            name: newItemName,
-            lote: '-',
-            quantity: newItemQty,
-            unit_price: newItemPrice,
-            discount: 0,
-            tax_rate: 14,
-            exemption_code: '',
-            total: (newItemQty * newItemPrice)
-        }]);
-        setNewItemName('');
-        setNewItemQty(1);
-        setNewItemPrice(1000);
-    };
-
-    const removeItem = (id: string) => {
-        setItems(items.filter(i => i.id !== id));
-    };
-
-    const applyDiscount = (id: string, discountVal: number) => {
-        setItems(items.map(i => {
-            if (i.id === id) {
-                const newTotal = (i.quantity * i.unit_price) - discountVal;
-                return { ...i, discount: discountVal, total: newTotal > 0 ? newTotal : 0 };
-            }
-            return i;
-        }));
-    };
-
-    const unTaxedSubtotal = items.reduce((acc, curr) => acc + (curr.quantity * curr.unit_price), 0);
-    const globalDiscount = items.reduce((acc, curr) => acc + curr.discount, 0);
-    const subtotal = unTaxedSubtotal - globalDiscount;
-    const tax = subtotal * 0.14; // 14% IVA
-    const total = subtotal + tax;
-
-    const filteredProducts = products.filter(p =>
-        p.name.toLowerCase().includes(searchProd.toLowerCase()) ||
-        (p.barcode && p.barcode.includes(searchProd))
-    );
+    const {
+        docType, setDocType,
+        paymentMethod, setPaymentMethod,
+        dueDate, setDueDate,
+        customers,
+        searchProd, setSearchProd,
+        selectedCustomer,
+        clientName, setClientName,
+        clientNif, setClientNif,
+        items,
+        newItemName, setNewItemName,
+        newItemQty, setNewItemQty,
+        newItemPrice, setNewItemPrice,
+        unTaxedSubtotal,
+        globalDiscount,
+        subtotal,
+        tax,
+        total,
+        filteredProducts,
+        handleSelectCustomer,
+        addDbProduct,
+        addManualItem,
+        removeItem,
+        applyDiscount,
+        resetCheckout
+    } = usePosTerminal(tenantId, session, !!tenantStatus?.is_iva_enabled);
 
     const checkout = async (format: 'A4' | 'THERMAL') => {
         if (items.length === 0) return alert('Adicione artigos à venda antes de faturar.');
@@ -200,8 +101,8 @@ export const PosTerminal = ({ session, tenantId, user, onUpdateSession, tenantSt
             }
 
             // 5. Build PDF Logic
-            const invoice: InvoiceData = {
-                id: invoiceRecord?.invoice_no || `MANUAL/${Date.now()}`,
+            const invoiceData: InvoiceData = {
+                id: invoiceRecord?.invoice_no || `OFFLINE-${Date.now()}`,
                 type: docType === 'FT' ? 'FATURA / RECIBO' : 'FATURA PROFORMA',
                 client_name: clientName,
                 client_tax_id: clientNif,
@@ -215,7 +116,7 @@ export const PosTerminal = ({ session, tenantId, user, onUpdateSession, tenantSt
                 subtotal: unTaxedSubtotal,
                 discount_total: globalDiscount,
                 tax_total: tax,
-                retention: 0, // Implementar mais tarde se o retalho exigir retenção na fonte
+                retention: 0,
                 total
             };
 
@@ -230,28 +131,35 @@ export const PosTerminal = ({ session, tenantId, user, onUpdateSession, tenantSt
                 bank_name: 'Banco Angolano de Investimentos (BAI)',
                 bank_account: '1234 5678 9012',
                 bank_iban: 'AO06 0000 0000 0000 0000 0000 00',
-                tax_regime: 'Regime Simplificado (IVA)'
+                tax_regime: tenantStatus?.is_iva_enabled ? 'Regime Geral (IVA 14%)' : 'Regime de Exclusão (Isento)' // Injectar regime baseado num toggle
             };
 
             if (format === 'A4') {
-                const doc = await generateInvoiceA4(invoice, currentTenant);
-                doc.save(`${invoice.id.replace('/', '_')}.pdf`);
+                const doc = await generateInvoiceA4(invoiceData, currentTenant);
+                doc.save(`${invoiceData.id.replace('/', '_')}.pdf`);
             } else {
-                const doc = await generateThermalReceipt(invoice, currentTenant);
-                doc.save(`${invoice.id.replace('/', '_')}_Talao.pdf`);
+                const doc = await generateThermalReceipt(invoiceData, currentTenant);
+                doc.save(`${invoiceData.id.replace('/', '_')}_Talao.pdf`);
             }
 
-            // Reset POS
-            setItems([]);
-            setClientName('Consumidor Final');
-            setClientNif('');
-            setSelectedCustomer(null);
-            setSearchProd('');
-            alert('Operação Comercial concluída com Sucesso.');
+            resetCheckout();
+            alert('Operação Comercial concluída. Documento Gerado.');
 
         } catch (error: any) {
-            console.error(error);
-            alert('Erro ao emitir documento oficial: ' + (error.message || 'Desconhecido'));
+            console.error('Erro de Supabase Online, a entrar em Cache Offline...', error);
+
+            // Queue Offline Request mechanism
+            offlineSync.queueInvoice({
+                tenant_id: tenantId,
+                session_id: session.id,
+                doc_type: docType,
+                client_name: clientName,
+                items: items,
+                total: total
+            });
+
+            alert('Aviso: Venda efetuada OFFLINE! O documento sincronizará quando houver internet.');
+            resetCheckout();
         }
     };
 
@@ -291,7 +199,7 @@ export const PosTerminal = ({ session, tenantId, user, onUpdateSession, tenantSt
                             </label>
                             <select
                                 className="w-full bg-slate-50 border border-slate-200 text-sm font-medium rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 mb-4 transition-all"
-                                onChange={handleSelectCustomer}
+                                onChange={e => handleSelectCustomer(e.target.value)}
                             >
                                 <option value="">Consumidor Final</option>
                                 {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}

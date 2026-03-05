@@ -267,11 +267,25 @@ export const generateInvoiceA4 = async (invoice: InvoiceData, tenant: Tenant) =>
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
     const regime = tenant.tax_regime || 'Regime Simplificado';
-    doc.text(`Observações: Enquadrado no ${regime}.`, 14, currentY);
+    let observation = `Observações: Enquadrado no ${regime}.`;
+    if (invoice.tax_total === 0) {
+        observation += ' Isento ao abrigo do Art. 12.º do CIVA / Código M00.';
+    }
+    doc.text(observation, 14, currentY);
+
+    // Protótipo de QR Code AGT (Obrigatório em 2024+)
+    const qrSize = 20;
+    doc.setDrawColor(150, 150, 150);
+    doc.setLineDashPattern([1, 1], 0);
+    doc.rect(14, currentY + 4, qrSize, qrSize);
+    doc.setLineDashPattern([], 0);
+    doc.setFontSize(5);
+    doc.text('[AGT QR DATA]', 14 + (qrSize / 2), currentY + 4 + (qrSize / 2), { align: 'center', baseline: 'middle' });
 
     // Homologação (Sempre visível se exigido por certificação)
     doc.setFont('helvetica', 'italic');
-    doc.text('Processado por programa validado n 000/AGT - HR-GESTPRO 2.0', 105, 280, { align: 'center' });
+    doc.setFontSize(7);
+    doc.text('Processado por programa validado nº 000/AGT - HR-GESTPRO 2.0', 105, 290, { align: 'center' });
 
     return doc;
 };
