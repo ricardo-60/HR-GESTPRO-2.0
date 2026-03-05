@@ -218,9 +218,9 @@ export const PosTerminal = ({ session, tenantId, user, onUpdateSession, tenantSt
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-4 bg-slate-50">
+                <div className="flex-1 overflow-y-auto lg:overflow-hidden flex flex-col lg:grid lg:grid-cols-4 bg-slate-50">
                     {/* LEFTSIDE: Product Query & Customers */}
-                    <div className="p-6 border-r border-slate-100 overflow-y-auto space-y-6">
+                    <div className="p-4 sm:p-6 border-b lg:border-b-0 lg:border-r border-slate-100 overflow-y-auto space-y-6 lg:col-span-1 order-2 lg:order-1">
 
                         {/* Selector de Clientes */}
                         <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden">
@@ -336,8 +336,8 @@ export const PosTerminal = ({ session, tenantId, user, onUpdateSession, tenantSt
                     </div>
 
                     {/* MIDDLE: Carrinho de Compras */}
-                    <div className="lg:col-span-2 bg-white flex flex-col pt-6 relative border-r border-slate-100">
-                        <div className="px-8 pb-4 border-b border-slate-100 flex justify-between items-end">
+                    <div className="lg:col-span-2 bg-white flex flex-col pt-6 relative border-b lg:border-b-0 lg:border-r border-slate-100 order-1 lg:order-2">
+                        <div className="px-6 sm:px-8 pb-4 border-b border-slate-100 flex justify-between items-end">
                             <h3 className="text-xl font-black text-slate-900">Itens em Registo</h3>
                             <div className="text-xs font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-md">
                                 {items.length} Linhas
@@ -398,7 +398,7 @@ export const PosTerminal = ({ session, tenantId, user, onUpdateSession, tenantSt
                     </div>
 
                     {/* RIGHT: Resumo e Pagamento */}
-                    <div className="bg-white p-6 md:p-8 flex flex-col z-20 shadow-[-10px_0_20px_rgba(0,0,0,0.02)]">
+                    <div className="bg-white p-4 sm:p-6 md:p-8 flex flex-col z-20 shadow-[-10px_0_20px_rgba(0,0,0,0.02)] lg:col-span-1 order-3 lg:order-3 min-h-[500px] lg:min-h-0">
                         <div className="mb-8">
                             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">
                                 Tipo de Documento Oficial

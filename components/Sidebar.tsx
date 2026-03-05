@@ -36,7 +36,12 @@ export const Sidebar: React.FC<{
   const filteredItems = NAV_ITEMS.filter(item => role && item.roles.includes(role));
 
   return (
-    <aside className={`${isOpen ? 'w-64' : 'w-20'} bg-slate-900 h-full transition-all duration-300 flex flex-col border-r border-slate-800 shadow-xl overflow-hidden`}>
+    <aside className={`
+      ${isOpen ? 'w-64' : 'w-20'} 
+      ${!isOpen && 'lg:w-20 w-0'}
+      fixed lg:relative z-50
+      bg-slate-900 h-full transition-all duration-300 flex flex-col border-r border-slate-800 shadow-xl overflow-hidden
+    `}>
       <div className="p-6 flex items-center space-x-3 border-b border-slate-800 bg-slate-900 shrink-0">
         <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/20">
           <i className="fas fa-rocket text-white text-sm"></i>
