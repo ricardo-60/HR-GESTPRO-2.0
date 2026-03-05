@@ -1,17 +1,19 @@
 
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { AuthProvider, useAuth } from './AuthContext';
 import { UserRole, TenantStatus } from './types';
 import { checkSupabaseConfig, SUPABASE_URL, SUPABASE_ANON_KEY } from './lib/supabase';
-import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import UserManagement from './pages/UserManagement';
-import CompanyManagement from './pages/CompanyManagement';
-import SalesManagement from './pages/SalesManagement';
-import HRManagement from './pages/HRManagement';
 import Layout from './components/Layout';
-import ExpiredLicense from './pages/ExpiredLicense';
-import MasterSettings from './pages/MasterSettings';
+
+// Usando React.lazy para Code Splitting (Acelera o tempo de carregamento inicial)
+const Login = lazy(() => import('./pages/Login'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const UserManagement = lazy(() => import('./pages/UserManagement'));
+const CompanyManagement = lazy(() => import('./pages/CompanyManagement'));
+const SalesManagement = lazy(() => import('./pages/SalesManagement'));
+const HRManagement = lazy(() => import('./pages/HRManagement'));
+const ExpiredLicense = lazy(() => import('./pages/ExpiredLicense'));
+const MasterSettings = lazy(() => import('./pages/MasterSettings'));
 
 /**
  * MainRouter: Core SPA Navigation Logic.
@@ -51,10 +53,20 @@ const MainRouter: React.FC = () => {
     }
   };
 
+  // Componente de Loading Interativo para as transições
+  const PageLoader = () => (
+    <div className="w-full h-96 flex flex-col items-center justify-center opacity-50">
+      <div className="w-10 h-10 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
+      <p className="text-xs font-bold text-slate-400 mt-4 uppercase tracking-widest">A carregar módulo...</p>
+    </div>
+  );
+
   return (
     <Layout currentPath={currentPath} onNavigate={setCurrentPath}>
       <div className="animate-in fade-in slide-in-from-bottom-3 duration-700">
-        {renderContent()}
+        <Suspense fallback={<PageLoader />}>
+          {renderContent()}
+        </Suspense>
       </div>
     </Layout>
   );
@@ -108,10 +120,24 @@ const AppContent: React.FC = () => {
     );
   }
 
-  if (!user) return <Login />;
+  if (!user) {
+    return (
+      <Suspense fallback={
+        <div className="min-h-screen flex items-center justify-center bg-slate-50">
+          <div className="w-12 h-12 border-4 border-slate-200 border-t-indigo-600 rounded-full animate-spin"></div>
+        </div>
+      }>
+        <Login />
+      </Suspense>
+    );
+  }
 
   if (tenantStatus?.status === TenantStatus.EXPIRED || tenantStatus?.status === TenantStatus.SUSPENDED) {
-    return <ExpiredLicense />;
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-slate-50" />}>
+        <ExpiredLicense />
+      </Suspense>
+    );
   }
 
   if (!profile) {
