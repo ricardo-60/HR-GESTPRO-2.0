@@ -17,6 +17,8 @@ const MasterSettings = lazy(() => import('./pages/MasterSettings'));
 const Suppliers = lazy(() => import('./pages/Suppliers'));
 const PurchaseOrders = lazy(() => import('./pages/PurchaseOrders'));
 const Reports = lazy(() => import('./pages/Reports'));
+const SaftExport = lazy(() => import('./pages/SaftExport'));
+const KeyManagement = lazy(() => import('./pages/KeyManagement'));
 
 /**
  * MainRouter: Core SPA Navigation Logic.
@@ -54,6 +56,10 @@ const MainRouter: React.FC = () => {
         return <Suppliers />;
       case 'reports':
         return <Reports />;
+      case 'saft':
+        return <SaftExport />;
+      case 'keys':
+        return <KeyManagement />;
       case 'settings':
         if (role === UserRole.MASTER) return <MasterSettings />;
         return <Dashboard variant="admin" />;

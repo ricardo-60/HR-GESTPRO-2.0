@@ -28,6 +28,8 @@ export const Sidebar: React.FC<{
     { id: 'pur', label: 'Compras / Stock', icon: 'fa-cart-arrow-down', roles: [UserRole.MASTER, UserRole.ADMIN, UserRole.FINANCE], path: 'purchases' },
     { id: 'rep', label: 'Relatórios BI', icon: 'fa-chart-bar', roles: [UserRole.MASTER, UserRole.ADMIN, UserRole.FINANCE], path: 'reports' },
     { id: 'fin', label: 'Faturação', icon: 'fa-file-invoice-dollar', roles: [UserRole.MASTER, UserRole.ADMIN, UserRole.FINANCE], path: 'finance' },
+    { id: 'saft', label: 'Exportar SAFT-AO', icon: 'fa-file-export', roles: [UserRole.MASTER, UserRole.ADMIN], path: 'saft' },
+    { id: 'keys', label: 'Chaves AGT', icon: 'fa-key', roles: [UserRole.MASTER, UserRole.ADMIN], path: 'keys' },
     { id: 'cfg', label: 'Configurações', icon: 'fa-cog', roles: [UserRole.MASTER, UserRole.ADMIN], path: 'settings' },
   ];
 

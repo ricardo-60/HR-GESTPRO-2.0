@@ -34,6 +34,9 @@ export interface InvoiceData {
     tax_total: number;
     retention?: number; // Retenção na Fonte
     total: number; // Total Final
+    // Campos de Conformidade AGT Angola
+    agt_hash_chars?: string;    // 4 chars do hash AGT (ex: '4rT9')
+    agt_signature?: string;     // Assinatura RSA completa (Base64)
 }
 
 // Helper para converter URL em Base64 para inserir no PDF
@@ -284,6 +287,17 @@ export const generateInvoiceA4 = async (invoice: InvoiceData, tenant: Tenant) =>
     doc.setLineDashPattern([], 0);
     doc.setFontSize(5);
     doc.text('[AGT QR DATA]', 14 + (qrSize / 2), currentY + 4 + (qrSize / 2), { align: 'center', baseline: 'middle' });
+
+    // HASH AGT (Obrigatório por Lei — 4 chars da assinatura digital)
+    if (invoice.agt_hash_chars) {
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(63, 81, 181);
+        doc.text(`Hash: ${invoice.agt_hash_chars}-`, 14, currentY + 4);
+        doc.setTextColor(0, 0, 0);
+        doc.setFont('helvetica', 'normal');
+        currentY += 8;
+    }
 
     // Homologação (Sempre visível se exigido por certificação)
     doc.setFont('helvetica', 'italic');
