@@ -31,7 +31,6 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "installerHeaderBackground": "#0f172a",
       "installerIcon": "build/icon.png",
       "uninstallerIcon": "build/icon.png",
       "createDesktopShortcut": true,
