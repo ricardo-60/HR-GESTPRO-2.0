@@ -67,7 +67,7 @@ O HR-GESTPRO 2.0 gera documentos certificados por algoritmos de assinatura digit
 ### Exportação de SAFT-AO:
 1. Aceda a **Relatórios > Exportar SAFT**.
 2. Selecione o mês pretendido.
-3. O sistema gerará um ficheiro `.xml` validado, pronto para ser submetido no portal da AGT.
+3. O sistema gerará um ficheiro \`.xml\` validado, pronto para ser submetido no portal da AGT.
 
 ---
 
