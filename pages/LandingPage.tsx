@@ -47,7 +47,7 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
             </nav>
 
             {/* Hero */}
-            <section className="pt-32 pb-20 px-6 text-center relative">
+            <section className="pt-40 pb-20 px-6 text-center relative">
                 {/* Glow bg */}
                 <div className="absolute inset-0 overflow-hidden pointer-events-none">
                     <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-3xl" />

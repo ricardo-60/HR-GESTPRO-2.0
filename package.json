@@ -1,7 +1,7 @@
 {
   "name": "hr-gestpro-2.0",
   "private": true,
-  "version": "2.1.1",
+  "version": "2.1.2",
   "main": "electron/main.js",
   "build": {
     "appId": "com.hrtecnologias.gestpro",
@@ -31,8 +31,6 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "installerIcon": "build/icon.png",
-      "uninstallerIcon": "build/icon.png",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "HR-GESTPRO 2.0"
