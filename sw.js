@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hr-gestpro-v1';
+const CACHE_NAME = 'hr-gestpro-v2.1.3';
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
