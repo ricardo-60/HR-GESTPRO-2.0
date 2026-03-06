@@ -158,6 +158,7 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
             <footer className="border-t border-slate-800 mt-16 py-10 text-center text-slate-500 text-sm">
                 <p className="font-bold text-slate-400 mb-1">HR-GESTPRO 2.0</p>
                 <p>© 2026 HR Tecnologias · Processado por programa validado nº 000/AGT</p>
+                <p className="mt-2 text-indigo-400 font-bold">geral@hr-tecnologia.com | +244 923 658 211</p>
                 <div className="flex justify-center gap-6 mt-4">
                     <a href={RELEASES_URL} target="_blank" rel="noopener noreferrer" className="hover:text-indigo-400 transition-colors">GitHub Releases</a>
                     <button onClick={onLogin} className="hover:text-indigo-400 transition-colors">Entrar na Plataforma</button>

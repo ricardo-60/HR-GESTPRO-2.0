@@ -5,6 +5,7 @@ import fs from 'fs';
 
 // 1. Disable hardware acceleration to avoid GPU sleep issues (White Screen)
 app.disableHardwareAcceleration();
+app.commandLine.appendSwitch('disable-gpu-compositing');
 
 let psbId = null;
 

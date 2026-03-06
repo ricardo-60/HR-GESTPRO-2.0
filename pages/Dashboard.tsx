@@ -34,6 +34,7 @@ const Dashboard: React.FC<DashboardProps> = ({ variant }) => {
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   React.useEffect(() => {
+    if (!user) return;
     const shown = localStorage.getItem(`hgp_onboarding_shown_${user?.id}`);
     if (!shown && tenantStatus?.status === 'trial') {
       setShowOnboarding(true);

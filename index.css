@@ -1,0 +1,71 @@
+/* =================================================
+ * HR-GESTPRO 2.0 — Global Stylesheet
+ * Complementa o Tailwind CSS CDN
+ * ================================================= */
+
+/* Variáveis de Marca */
+:root {
+    --brand-primary: #2563eb;   /* Azul Elétrico */
+    --brand-secondary: #f97316; /* Laranja Vibrante */
+}
+
+/* Tipografia base */
+body {
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar personalizada */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+
+/* Transições de página suaves */
+.page-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Wrapper de tabelas responsivas */
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Modais: altura máxima com scroll interno */
+.modal-content {
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+/* Carregamento lazy de imagens */
+img {
+    content-visibility: auto;
+}
+
+/* Animação de pulse lento para glow da splash screen */
+@keyframes pulse-slow {
+    0%, 100% { opacity: 0.1; transform: translate(-50%, -50%) scale(1); }
+    50%       { opacity: 0.2; transform: translate(-50%, -50%) scale(1.1); }
+}

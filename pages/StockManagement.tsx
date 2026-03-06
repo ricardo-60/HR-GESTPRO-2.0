@@ -64,7 +64,13 @@ const StockManagement: React.FC = () => {
         }
         return () => {
             if (scanner) {
-                try { scanner.clear(); } catch (e) { }
+                try {
+                    scanner.clear();
+                    const readerElem = document.getElementById("reader-stock");
+                    if (readerElem) readerElem.innerHTML = "";
+                } catch (e) {
+                    console.warn("Scanner cleanup failed (ignored):", e);
+                }
             }
         };
     }, [isScanning, products]);

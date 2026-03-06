@@ -77,7 +77,11 @@ export const Sidebar: React.FC<{
           </div>
         )}
         <button
-          onClick={() => signOut()}
+          onClick={() => {
+            window.localStorage.clear();
+            signOut();
+            window.location.href = '/';
+          }}
           className={`flex items-center space-x-3 w-full p-3 rounded-xl text-rose-400 hover:bg-rose-500/10 transition-colors ${!isOpen && 'justify-center'}`}
         >
           <i className="fas fa-sign-out-alt"></i>
