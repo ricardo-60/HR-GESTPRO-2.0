@@ -2,6 +2,13 @@
   "name": "hr-gestpro-2.0",
   "private": true,
   "version": "2.1.3",
+  "description": "Software de Gestão Empresarial para Angola — Faturação AGT, RH, Stock e PDV",
+  "author": {
+    "name": "HR Tecnologias",
+    "email": "suporte@hrtecnologias.ao",
+    "url": "https://github.com/ricardo-60/HR-GESTPRO-2.0"
+  },
+  "homepage": "https://github.com/ricardo-60/HR-GESTPRO-2.0",
   "main": "electron/main.js",
   "build": {
     "appId": "com.hrtecnologias.gestpro",
@@ -9,32 +16,50 @@
     "copyright": "Copyright © 2026 HR Tecnologias",
     "icon": "build/icon.png",
     "directories": {
-      "output": "dist_electron"
+      "output": "dist_electron",
+      "buildResources": "build"
     },
     "files": [
       "dist/**/*",
       "electron/**/*",
       "package.json"
     ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "requestedExecutionLevel": "asInvoker",
+      "artifactName": "HR-GESTPRO-Setup-${version}.exe"
+    },
     "mac": {
       "target": "dmg",
-      "icon": "build/icon.png"
-    },
-    "win": {
-      "target": "nsis",
-      "icon": "build/icon.png"
+      "icon": "build/icon.png",
+      "category": "public.app-category.business"
     },
     "linux": {
       "target": "AppImage",
-      "icon": "build/icon.png"
+      "icon": "build/icon.png",
+      "category": "Office"
     },
     "nsis": {
       "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "HR-GESTPRO 2.0"
-    }
+      "shortcutName": "HR-GESTPRO 2.0",
+      "uninstallDisplayName": "HR-GESTPRO ${version}",
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": true
+    },
+    "publish": null
   },
   "scripts": {
     "dev": "vite",
