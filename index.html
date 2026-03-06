@@ -9,67 +9,104 @@
     <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
     <title>HR-GESTPRO-2.0 | Enterprise HR</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        indigo: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb', // Azul Elétrico
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                            950: '#172554',
+                        },
+                        amber: {
+                            50: '#fff7ed',
+                            100: '#ffedd5',
+                            200: '#fed7aa',
+                            300: '#fdba74',
+                            400: '#fb923c',
+                            500: '#f97316', // Laranja Vibrante
+                            600: '#ea580c',
+                            700: '#c2410c',
+                            800: '#9a3412',
+                            900: '#7c2d12',
+                            950: '#431407',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
-        :root {
-            --brand-primary: #4f46e5;
-        }
+    :root {
+    --brand-primary: #2563eb;
+    /* blue-600 Azul Elétrico */
+    --brand-secondary: #f97316;
+    /* orange-500 Laranja Vibrante */
+    }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
+    body {
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    }
 
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 4px;
-        }
+    .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    }
 
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: transparent;
-        }
+    .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+    }
 
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-        }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    }
 
-        /* Smooth page transitions */
-        .page-fade-in {
-            animation: fadeIn 0.5s ease-out forwards;
-        }
+    /* Smooth page transitions */
+    .page-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+    }
 
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
+    @keyframes fadeIn {
+    from {
+    opacity: 0;
+    transform: translateY(10px);
+    }
 
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+    to {
+    opacity: 1;
+    transform: translateY(0);
+    }
+    }
 
-        /* Responsive Table Wrapper */
-        .table-container {
-            width: 100%;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
+    /* Responsive Table Wrapper */
+    .table-container {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    }
 
-        /* Smart Modal Management */
-        .modal-content {
-            max-height: 90vh;
-            overflow-y: auto;
-        }
+    /* Smart Modal Management */
+    .modal-content {
+    max-height: 90vh;
+    overflow-y: auto;
+    }
 
-        /* Smooth Image Loading */
-        img {
-            content-visibility: auto;
-        }
+    /* Smooth Image Loading */
+    img {
+    content-visibility: auto;
+    }
     </style>
     <script type="importmap">
 {

@@ -3,7 +3,7 @@ import { MANUAL_CONTENT } from './ManualBase';
 
 export class ManualGenerator {
     private doc: jsPDF;
-    private primaryColor = '#4f46e5'; // Indigo-600
+    private primaryColor = '#2563eb'; // Blue-600 (Azul Elétrico)
     private secondaryColor = '#0f172a'; // Slate-900
     private textColor = '#334155'; // Slate-700
     private margin = 20;
@@ -23,7 +23,7 @@ export class ManualGenerator {
         this.doc.setFontSize(8);
         this.doc.setTextColor(150);
         this.doc.text('MANUAL DO UTILIZADOR - HR-GESTPRO 2.0', this.margin, 10);
-        this.doc.text('Página ' + this.doc.internal.getNumberOfPages(), this.pageWidth - this.margin - 15, 10);
+        this.doc.text('Página ' + (this.doc.internal as any).getNumberOfPages(), this.pageWidth - this.margin - 15, 10);
         this.doc.setDrawColor(240);
         this.doc.line(this.margin, 12, this.pageWidth - this.margin, 12);
     }
@@ -50,7 +50,7 @@ export class ManualGenerator {
         this.doc.setFont('helvetica', 'normal');
         this.doc.text('Manual do Utilizador', this.pageWidth / 2, 115, { align: 'center' });
 
-        this.doc.setDrawColor(79, 70, 229);
+        this.doc.setDrawColor(37, 99, 235); // rgb for #2563eb
         this.doc.setLineWidth(1);
         this.doc.line(this.pageWidth / 2 - 40, 125, this.pageWidth / 2 + 40, 125);
 
