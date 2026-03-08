@@ -112,6 +112,18 @@ const SalesManagement: React.FC = () => {
         );
     }
 
+    if (!tenantId || !profile) {
+        return (
+            <div className="flex flex-col items-center justify-center py-20 animate-pulse">
+                <div className="w-16 h-16 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center text-4xl mb-6 shadow-inner">
+                    <i className="fas fa-shopping-cart"></i>
+                </div>
+                <h2 className="text-xl font-black text-slate-800 tracking-tight">Preparando Terminal de Vendas...</h2>
+                <p className="text-slate-400 mt-2 font-medium uppercase text-[10px] tracking-widest">Sincronizando Sessão Comercial</p>
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
 
