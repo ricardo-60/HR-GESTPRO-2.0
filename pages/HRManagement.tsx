@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
 import { supabase } from '../lib/supabase';
+import { generatePayrollPDF, PayrollData } from '../lib/PayrollGenerator';
 
 interface Employee {
     id: string;
@@ -13,6 +14,10 @@ interface Employee {
     status: 'active' | 'inactive' | 'on_leave';
     contact_phone: string;
     contact_email: string;
+    nif?: string;
+    inss?: string;
+    iban?: string;
+    birth_date?: string;
 }
 
 const HRManagement: React.FC = () => {
@@ -31,8 +36,16 @@ const HRManagement: React.FC = () => {
         role: '',
         base_salary: 0,
         contact_phone: '',
-        contact_email: ''
+        contact_email: '',
+        nif: '',
+        inss: '',
+        iban: '',
+        birth_date: ''
     });
+
+    const [showCalculatorModal, setShowCalculatorModal] = useState(false);
+    const [calcSalary, setCalcSalary] = useState(0);
+    const [calcResults, setCalcResults] = useState({ inss: 0, irt: 0, net: 0 });
 
     const fetchEmployees = async () => {
         if (!supabase) return;
@@ -58,19 +71,33 @@ const HRManagement: React.FC = () => {
         e.preventDefault();
         if (!supabase || !tenantId) return;
 
-        const { error } = await supabase.from('employees').insert([{
+        // Auditoria e mapeamento de campos (v2.1.5)
+        const payload = {
             tenant_id: tenantId,
-            ...formData,
+            full_name: formData.full_name,
+            email: formData.contact_email, // Mapeado para o campo 'email' da DB
+            job_title: formData.role,      // Mapeado para 'job_title'
+            base_salary: formData.base_salary,
+            id_card: formData.id_card,
+            nif: formData.nif,
+            inss: formData.inss,
+            iban: formData.iban,
+            birth_date: formData.birth_date || null,
+            phone: formData.contact_phone,
+            hire_date: new Date().toISOString().split('T')[0], // Default para hoje se não especificado
             status: 'active'
-        }]);
+        };
+
+        const { error } = await supabase.from('employees').insert([payload]);
 
         if (error) {
+            console.error('[RH Audit] Erro ao cadastrar:', error);
             alert('Erro ao criar colaborador: ' + error.message);
         } else {
             alert('Colaborador adicionado com sucesso!');
             setShowAddModal(false);
             setFormData({
-                full_name: '', id_card: '', role: '', base_salary: 0, contact_phone: '', contact_email: ''
+                full_name: '', id_card: '', role: '', base_salary: 0, contact_phone: '', contact_email: '', nif: '', inss: '', iban: '', birth_date: ''
             });
             fetchEmployees();
         }
@@ -110,8 +137,72 @@ const HRManagement: React.FC = () => {
         e.role.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const calculateIRT = (salary: number) => {
+        const base = salary;
+        const inss = base * 0.03;
+        const taxable = base - inss;
+        let irt = 0;
+
+        if (taxable <= 100000) irt = 0;
+        else if (taxable <= 150000) irt = (taxable - 100000) * 0.10 + 2000;
+        else if (taxable <= 200000) irt = (taxable - 150000) * 0.13 + 7000;
+        else if (taxable <= 300000) irt = (taxable - 200000) * 0.16 + 13500;
+        else if (taxable <= 500000) irt = (taxable - 300000) * 0.18 + 29500;
+        else if (taxable <= 1000000) irt = (taxable - 500000) * 0.19 + 65500;
+        else irt = (taxable - 1000000) * 0.25 + 160500;
+
+        return { inss, irt, net: taxable - irt };
+    };
+
+    const handlePrintReceipt = async (emp: Employee) => {
+        if (!tenantStatus) return;
+
+        const results = calculateIRT(emp.base_salary);
+        const data: PayrollData = {
+            period: new Date().toLocaleString('pt-PT', { month: 'long', year: 'numeric' }),
+            employee_name: emp.full_name,
+            employee_role: emp.role,
+            employee_id_card: emp.id_card,
+            employee_nif: emp.nif,
+            employee_inss: emp.inss,
+            employee_iban: emp.iban,
+            base_salary: emp.base_salary,
+            inss_employee: results.inss,
+            inss_employer: emp.base_salary * 0.08, // 8% da entidade empregadora
+            irt: results.irt,
+            net_salary: results.net
+        };
+
+        const doc = await generatePayrollPDF(data, {
+            id: tenantId || '',
+            company_name: tenantStatus.company_name,
+            tax_id: tenantStatus.tax_id || '',
+            address: tenantStatus.address || '',
+            phone: tenantStatus.phone || '',
+            logo_url: tenantStatus.logo_url,
+            status: tenantStatus.status,
+            plan_tier: tenantStatus.plan_type || 'Pro'
+        } as any);
+
+        doc.save(`Recibo_${emp.full_name.replace(/\s+/g, '_')}_${data.period}.pdf`);
+    };
+
+    const handleCalc = (val: number) => {
+        setCalcSalary(val);
+        const res = calculateIRT(val);
+        setCalcResults(res);
+    };
+
     const activeCount = employees.filter(e => e.status === 'active').length;
     const leaveCount = employees.filter(e => e.status === 'on_leave').length;
+    const totalPayroll = employees.filter(e => e.status === 'active').reduce((acc, emp) => acc + emp.base_salary, 0);
+
+    const currentMonth = new Date().getMonth() + 1;
+    const birthdayCount = employees.filter(emp => {
+        if (!emp.birth_date) return false;
+        const birthMonth = new Date(emp.birth_date).getMonth() + 1;
+        return birthMonth === currentMonth;
+    }).length;
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -128,6 +219,13 @@ const HRManagement: React.FC = () => {
                         <span>Exportar PDF</span>
                     </button>
                     <button
+                        onClick={() => setShowCalculatorModal(true)}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-emerald-200 transition-all flex items-center space-x-2"
+                    >
+                        <i className="fas fa-calculator"></i>
+                        <span>Calculadora IRT</span>
+                    </button>
+                    <button
                         onClick={() => setShowAddModal(true)}
                         className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-200 transition-all flex items-center space-x-2"
                     >
@@ -139,35 +237,24 @@ const HRManagement: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-50 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110"></div>
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-rose-50 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110"></div>
                     <div className="relative">
-                        <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center text-xl mb-4">
-                            <i className="fas fa-users"></i>
+                        <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center text-xl mb-4">
+                            <i className="fas fa-money-check-alt"></i>
                         </div>
-                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-1">Total Equipa</p>
-                        <p className="text-3xl font-black text-slate-800 tracking-tighter">{employees.length}</p>
+                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-1">Folha Salarial Base</p>
+                        <p className="text-2xl font-black text-slate-800 tracking-tighter">KZ {totalPayroll.toLocaleString()}</p>
                     </div>
                 </div>
 
                 <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-50 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110"></div>
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-purple-50 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110"></div>
                     <div className="relative">
-                        <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center text-xl mb-4">
-                            <i className="fas fa-user-check"></i>
+                        <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center text-xl mb-4">
+                            <i className="fas fa-birthday-cake"></i>
                         </div>
-                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-1">Colaboradores Ativos</p>
-                        <p className="text-3xl font-black text-slate-800 tracking-tighter">{activeCount}</p>
-                    </div>
-                </div>
-
-                <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-amber-50 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110"></div>
-                    <div className="relative">
-                        <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center text-xl mb-4">
-                            <i className="fas fa-umbrella-beach"></i>
-                        </div>
-                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-1">Em Licença / Férias</p>
-                        <p className="text-3xl font-black text-slate-800 tracking-tighter">{leaveCount}</p>
+                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-1">Aniversariantes ({new Date().toLocaleString('pt-PT', { month: 'long' })})</p>
+                        <p className="text-3xl font-black text-slate-800 tracking-tighter">{birthdayCount}</p>
                     </div>
                 </div>
             </div>
@@ -235,8 +322,8 @@ const HRManagement: React.FC = () => {
                                             value={emp.status}
                                             onChange={e => updateStatus(emp.id, e.target.value)}
                                             className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer appearance-none border-0 ${emp.status === 'active' ? 'bg-emerald-50 text-emerald-600' :
-                                                    emp.status === 'on_leave' ? 'bg-amber-50 text-amber-600' :
-                                                        'bg-rose-50 text-rose-600'
+                                                emp.status === 'on_leave' ? 'bg-amber-50 text-amber-600' :
+                                                    'bg-rose-50 text-rose-600'
                                                 }`}
                                         >
                                             <option value="active">Ativo</option>
@@ -246,6 +333,13 @@ const HRManagement: React.FC = () => {
                                     </td>
                                     <td className="px-8 py-5 text-right">
                                         <div className="flex items-center justify-end space-x-2">
+                                            <button
+                                                onClick={() => handlePrintReceipt(emp)}
+                                                title="Gerar Recibo"
+                                                className="w-8 h-8 rounded-full bg-slate-50 text-slate-600 hover:bg-slate-900 hover:text-white transition-colors flex items-center justify-center font-bold"
+                                            >
+                                                <i className="fas fa-file-invoice"></i>
+                                            </button>
                                             <button
                                                 onClick={() => handleAttendance(emp.id, 'present')}
                                                 title="Marcar Presença"
@@ -300,8 +394,28 @@ const HRManagement: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Nº Identificação (BI/NIF)</label>
+                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Nº Identificação (BI)</label>
                                 <input type="text" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" value={formData.id_card} onChange={e => setFormData({ ...formData, id_card: e.target.value })} />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">NIF (Contribuinte)</label>
+                                <input type="text" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" value={formData.nif} onChange={e => setFormData({ ...formData, nif: e.target.value })} />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Nº INSS</label>
+                                <input type="text" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" value={formData.inss} onChange={e => setFormData({ ...formData, inss: e.target.value })} />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">IBAN</label>
+                                <input type="text" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="AO06 0000..." value={formData.iban} onChange={e => setFormData({ ...formData, iban: e.target.value })} />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Data de Nascimento</label>
+                                <input type="date" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" value={formData.birth_date} onChange={e => setFormData({ ...formData, birth_date: e.target.value })} />
                             </div>
 
                             <div>
@@ -324,6 +438,69 @@ const HRManagement: React.FC = () => {
                             </button>
                         </div>
                     </form>
+                </div>
+            )}
+
+            {/* Modal de Calculadora IRT */}
+            {showCalculatorModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden">
+                        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-emerald-50">
+                            <div>
+                                <h3 className="text-xl font-black text-slate-900 tracking-tight">Simulador IRT & INSS</h3>
+                                <p className="text-emerald-700 text-xs font-bold uppercase tracking-widest">Tabela Angola 2024/2025</p>
+                            </div>
+                            <button type="button" onClick={() => setShowCalculatorModal(false)} className="text-emerald-900/40 hover:text-emerald-900 transition-colors">
+                                <i className="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
+
+                        <div className="p-8 space-y-6">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Salário Bruto Mensal (AOA)</label>
+                                <div className="relative">
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-slate-400">KZ</span>
+                                    <input
+                                        type="number"
+                                        className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-xl font-black focus:ring-4 focus:ring-emerald-100 outline-none transition-all"
+                                        placeholder="0.00"
+                                        value={calcSalary || ''}
+                                        onChange={e => handleCalc(Number(e.target.value))}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="bg-slate-50 rounded-2xl p-6 space-y-4">
+                                <div className="flex justify-between items-center font-bold">
+                                    <span className="text-slate-500">Desconto INSS (3%)</span>
+                                    <span className="text-rose-600">- KZ {calcResults.inss.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between items-center font-bold">
+                                    <span className="text-slate-500">Imposto IRT</span>
+                                    <span className="text-rose-600">- KZ {calcResults.irt.toLocaleString()}</span>
+                                </div>
+                                <div className="pt-4 border-t border-slate-200 flex justify-between items-end">
+                                    <div>
+                                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Salário Líquido</p>
+                                        <p className="text-3xl font-black text-emerald-600 tracking-tighter">KZ {calcResults.net.toLocaleString()}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Total Descontos</p>
+                                        <p className="text-sm font-bold text-slate-600">KZ {(calcResults.inss + calcResults.irt).toLocaleString()}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-6 bg-slate-50 flex justify-center">
+                            <button
+                                onClick={() => setShowCalculatorModal(false)}
+                                className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-200"
+                            >
+                                Fechar Simulador
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

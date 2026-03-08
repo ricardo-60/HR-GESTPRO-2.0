@@ -168,6 +168,17 @@ const AppContent: React.FC = () => {
     );
   }
 
+  // Safety Timeout: Forçar entrada se o perfil demorar > 5s
+  useEffect(() => {
+    if (user && !profile) {
+      const timer = setTimeout(() => {
+        console.warn('[Security] Perfil não carregado em 5s. Forçando verificação...');
+        // Opcional: Recarregar ou tentar buscar novamente
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [user, profile]);
+
   if (!profile) {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center p-12 text-center">
@@ -177,12 +188,17 @@ const AppContent: React.FC = () => {
         <h2 className="text-xl font-black text-slate-900 mb-2">A Sincronizar...</h2>
         <p className="text-slate-500 text-sm max-w-xs leading-relaxed mb-8">Estamos a preparar o seu ambiente de trabalho multitenant.</p>
 
-        <button
-          onClick={() => signOut()}
-          className="text-gray-400 hover:text-indigo-600 font-bold text-[10px] uppercase tracking-widest transition-colors"
-        >
-          Sair da Conta e Tentar Novamente
-        </button>
+        <div className="flex flex-col gap-4">
+          <button
+            onClick={() => signOut()}
+            className="text-gray-400 hover:text-indigo-600 font-bold text-[10px] uppercase tracking-widest transition-colors"
+          >
+            Sair da Conta e Tentar Novamente
+          </button>
+          <p className="text-[9px] text-slate-300 uppercase font-bold tracking-[0.2em] animate-pulse">
+            Aguarde 5 segundos para auto-recuperação
+          </p>
+        </div>
       </div>
     );
   }

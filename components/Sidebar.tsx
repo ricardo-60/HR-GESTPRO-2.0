@@ -78,7 +78,20 @@ export const Sidebar: React.FC<{
         )}
         <button
           onClick={() => {
+            console.log('[Logout] Iniciando limpeza total...');
+            try {
+              // Limpeza de Hardware (Scanner se estiver ativo)
+              const readerElem = document.getElementById("reader");
+              if (readerElem) {
+                console.log('[Logout] Scanner detetado, limpando...');
+                readerElem.innerHTML = "";
+              }
+            } catch (hwErr) {
+              console.warn('[Logout] Falha ao limpar hardware:', hwErr);
+            }
+
             window.localStorage.clear();
+            window.sessionStorage.clear();
             signOut();
             window.location.href = '/';
           }}

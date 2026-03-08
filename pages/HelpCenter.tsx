@@ -33,6 +33,17 @@ const HelpCenter: React.FC = () => {
                 { q: 'O que é o SAFT-AO?', a: 'É o ficheiro normativo exigido pela AGT para exportar a faturação mensal. Deve ser gerado e enviado até ao dia 15 do mês seguinte.' },
                 { q: 'Como gerar o SAFT?', a: 'Vá ao menu "Exportar SAFT-AO", selecione o mês e o ano, e clique em Gerar.' }
             ]
+        },
+        {
+            id: 'rh_360',
+            title: 'Recursos Humanos 360º',
+            icon: 'fa-user-tie',
+            color: 'bg-rose-50 text-rose-600',
+            content: [
+                { q: 'Como calcular impostos (IRT/INSS)?', a: 'No Dashboard de RH, clique em "Calculadora IRT". Insira o salário bruto e o sistema aplicará as taxas de Angola (2024/2025) automaticamente.' },
+                { q: 'Onde encontro o IBAN e NIF dos funcionários?', a: 'Estes dados estão na ficha detalhada de cada colaborador, acessível ao clicar em "Adicionar" ou ao editar um registo existente.' },
+                { q: 'Como gerir aniversários?', a: 'O Dashboard de RH mostra automaticamente o número de aniversariantes do mês atual para ajudar no planeamento de eventos internos.' }
+            ]
         }
     ];
 

@@ -121,17 +121,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Correctly accessing auth property for onAuthStateChange
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log(`[Auth] Evento: ${event}`);
       setLoading(true);
-      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-        const currentUser = session?.user ?? null;
-        setUser(currentUser);
-        if (currentUser) await fetchData(currentUser.id);
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null);
-        setProfile(null);
-        setTenantStatus(null);
+
+      try {
+        if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+          const currentUser = session?.user ?? null;
+          setUser(currentUser);
+          if (currentUser) {
+            await fetchData(currentUser.id);
+          }
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+          setProfile(null);
+          setTenantStatus(null);
+          setError(null);
+        }
+      } catch (err) {
+        console.error('[Auth] Erro no listener:', err);
+        setError('Ocorreu um erro ao atualizar a sua sessão.');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => authListener.subscription.unsubscribe();
