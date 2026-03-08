@@ -119,6 +119,15 @@ const UserManagement: React.FC = () => {
     }
   };
 
+  if (!tenantId) {
+    return (
+      <div className="p-20 text-center text-slate-400">
+        <i className="fas fa-fingerprint animate-pulse text-3xl mb-4 text-indigo-200"></i>
+        <p className="font-bold uppercase text-[10px] tracking-widest italic">Aguardando Sincronização de Perfil...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex justify-between items-center">

@@ -125,6 +125,16 @@ const Dashboard: React.FC<DashboardProps> = ({ variant }) => {
 
   const data = getDashboardData();
 
+  if (!user || !tenantStatus) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh]">
+        <div className="w-16 h-16 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-6"></div>
+        <h2 className="text-xl font-black text-slate-800 tracking-tight">Preparando Dashboard...</h2>
+        <p className="text-slate-400 text-sm font-medium mt-2">Sincronizando ambiente organizacional</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-10">
       {showOnboarding && (

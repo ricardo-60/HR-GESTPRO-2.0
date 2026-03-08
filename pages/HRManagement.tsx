@@ -204,6 +204,18 @@ const HRManagement: React.FC = () => {
         return birthMonth === currentMonth;
     }).length;
 
+    if (loading || !tenantId) {
+        return (
+            <div className="flex flex-col items-center justify-center h-96 animate-pulse">
+                <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center text-xl mb-4">
+                    <i className="fas fa-fingerprint animate-bounce"></i>
+                </div>
+                <h2 className="text-lg font-black text-slate-900 mb-2">A Sincronizar Módulo RH...</h2>
+                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Validando permissões e carregando equipa</p>
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 border-b border-gray-100 pb-8">
