@@ -12,19 +12,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Safety Timeout: Force stop loading after 5 seconds
+  // Safety Timeout: Force stop loading after 3 seconds (v2.1.6 Emergency)
   useEffect(() => {
     if (loading) {
       const timer = setTimeout(() => {
-        console.warn('CRITICAL: Auth initialization timeout (5s). Forcing UI unlock.');
+        console.warn('CRITICAL: Auth initialization timeout (3s). Forcing UI unlock.');
         setLoading(false);
-        if (!user && !error) {
-          setError('O carregamento está a demorar mais do que o esperado. Verifique a sua ligação ou tente novamente.');
+        if (user && !profile) {
+          setError('A sincronização do perfil está demorada. Poderá haver lentidão em módulos de RH.');
+        } else if (!user && !error) {
+          setError('O carregamento está a demorar mais do que o esperado. Verifique a sua ligação.');
         }
-      }, 5000);
+      }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [loading, user, error]);
+  }, [loading, user, profile, error]);
 
   const fetchData = async (userId: string) => {
     if (!supabase) return;

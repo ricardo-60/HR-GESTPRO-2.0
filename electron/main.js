@@ -45,6 +45,8 @@ function createWindow() {
     });
 
     mainWindow.once('ready-to-show', () => {
+        // Force repaint one last time before showing
+        mainWindow.webContents.invalidate();
         mainWindow.show();
     });
 

@@ -114,10 +114,10 @@ const Dashboard: React.FC<DashboardProps> = ({ variant }) => {
           title: 'Company Admin',
           subtitle: `Management: ${tenantStatus?.company_name || 'Organization'}`,
           stats: [
-            { title: 'System Status', value: 'Active', icon: 'fa-check-circle', color: 'bg-indigo-600' },
+            { title: 'System Status', value: tenantStatus?.status === 'active' ? 'Active' : 'Warning', icon: 'fa-check-circle', color: 'bg-indigo-600' },
             { title: 'Active Users', value: '12', icon: 'fa-user-shield', color: 'bg-slate-800' },
             { title: 'Alerts', value: '4', icon: 'fa-bell', color: 'bg-amber-500' },
-            { title: 'Current Tier', value: 'Platinum', icon: 'fa-crown', color: 'bg-yellow-500' }
+            { title: 'Current Tier', value: tenantStatus?.plan_type || 'Standard', icon: 'fa-crown', color: 'bg-yellow-500' }
           ]
         };
     }
@@ -204,7 +204,7 @@ const Dashboard: React.FC<DashboardProps> = ({ variant }) => {
         <div className="flex items-center space-x-3 bg-indigo-50/50 px-5 py-3 rounded-2xl border border-indigo-100/50 shadow-sm self-start sm:self-auto">
           <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse ring-4 ring-emerald-500/10"></div>
           <span className="text-[10px] font-black text-indigo-900 uppercase tracking-widest">
-            Identity: {user?.email?.split('@')[0]}
+            Identity: {user?.email?.split('@')[0] || 'Unknown'}
           </span>
         </div>
       </div>
