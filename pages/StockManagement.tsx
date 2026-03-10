@@ -23,7 +23,8 @@ const StockManagement: React.FC = () => {
         cost_price: 0,
         stock_min: 5,
         is_active: true,
-        is_exempt: false
+        is_exempt: false,
+        exemption_reason: ''
     });
     const [uploading, setUploading] = useState(false);
 
@@ -130,7 +131,7 @@ const StockManagement: React.FC = () => {
         if (res?.success) {
             setIsProductModalOpen(false);
             setEditingProduct(null);
-            setProductForm({ name: '', sku: '', unit_price: 0, cost_price: 0, stock_min: 5, is_active: true, is_exempt: false });
+            setProductForm({ name: '', sku: '', unit_price: 0, cost_price: 0, stock_min: 5, is_active: true, is_exempt: false, exemption_reason: '' });
         } else {
             alert('Erro ao guardar: ' + res?.error);
         }
@@ -147,7 +148,7 @@ const StockManagement: React.FC = () => {
                     <button
                         onClick={() => {
                             setEditingProduct(null);
-                            setProductForm({ name: '', sku: '', unit_price: 0, cost_price: 0, stock_min: 5, is_active: true, is_exempt: false });
+                            setProductForm({ name: '', sku: '', unit_price: 0, cost_price: 0, stock_min: 5, is_active: true, is_exempt: false, exemption_reason: '' });
                             setIsProductModalOpen(true);
                         }}
                         className="bg-white text-slate-900 border border-slate-200 px-6 py-3 rounded-2xl font-bold shadow-sm hover:bg-slate-50 transition-all flex items-center gap-2"
@@ -444,7 +445,7 @@ const StockManagement: React.FC = () => {
                                 />
                             </div>
 
-                            <div className="flex items-center space-x-4 pt-6">
+                            <div className="flex flex-col space-y-4 pt-4 md:col-span-2">
                                 <div className="flex items-center">
                                     <input
                                         type="checkbox"
@@ -453,8 +454,26 @@ const StockManagement: React.FC = () => {
                                         checked={productForm.is_exempt}
                                         onChange={e => setProductForm(prev => ({ ...prev, is_exempt: e.target.checked }))}
                                     />
-                                    <label htmlFor="is_exempt" className="ml-2 text-xs font-bold text-slate-700">Isento de IVA</label>
+                                    <label htmlFor="is_exempt" className="ml-2 text-xs font-bold text-slate-700">Isento de IVA (Conformidade AGT)</label>
                                 </div>
+
+                                {productForm.is_exempt && (
+                                    <div className="animate-in slide-in-from-top-2 duration-300">
+                                        <label className="text-[10px] font-black text-rose-500 uppercase tracking-widest ml-1">Motivo de Isenção (Obrigatório AGT)</label>
+                                        <select
+                                            className="w-full bg-rose-50 border-0 rounded-2xl px-5 py-3.5 text-sm font-bold text-rose-700 focus:ring-4 focus:ring-rose-100 transition-all outline-none mt-1"
+                                            value={productForm.exemption_reason}
+                                            onChange={e => setProductForm(prev => ({ ...prev, exemption_reason: e.target.value }))}
+                                        >
+                                            <option value="">Selecione o motivo...</option>
+                                            <option value="M02">M02 - Isento nos termos da alínea a) do nº1 do Artº 12º do CIVA</option>
+                                            <option value="M04">M04 - Isento nos termos da alínea c) do nº1 do Artº 12º do CIVA</option>
+                                            <option value="M20">M20 - IVA - Regime de Exclusão</option>
+                                            <option value="M30">M30 - IVA - Regime Simplificado</option>
+                                            <option value="Outro">Outro Motivo (Especificar na descrição)</option>
+                                        </select>
+                                    </div>
+                                )}
                             </div>
                         </div>
 

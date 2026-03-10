@@ -94,7 +94,7 @@ export const OnboardingTour: React.FC<{
 
                 {/* WhatsApp Support Button */}
                 <a
-                    href="https://wa.me/244926102636"
+                    href="https://wa.me/244923658211"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="absolute bottom-4 right-4 w-12 h-12 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"

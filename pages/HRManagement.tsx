@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
 import { supabase } from '../lib/supabase';
 import { generatePayrollPDF, PayrollData } from '../lib/PayrollGenerator';
+import { calculateAngolaPayroll } from '../lib/PayrollCalculations';
 
 interface Employee {
     id: string;
@@ -137,27 +138,12 @@ const HRManagement: React.FC = () => {
         e.role.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const calculateIRT = (salary: number) => {
-        const base = salary;
-        const inss = base * 0.03;
-        const taxable = base - inss;
-        let irt = 0;
-
-        if (taxable <= 100000) irt = 0;
-        else if (taxable <= 150000) irt = (taxable - 100000) * 0.10 + 2000;
-        else if (taxable <= 200000) irt = (taxable - 150000) * 0.13 + 7000;
-        else if (taxable <= 300000) irt = (taxable - 200000) * 0.16 + 13500;
-        else if (taxable <= 500000) irt = (taxable - 300000) * 0.18 + 29500;
-        else if (taxable <= 1000000) irt = (taxable - 500000) * 0.19 + 65500;
-        else irt = (taxable - 1000000) * 0.25 + 160500;
-
-        return { inss, irt, net: taxable - irt };
-    };
+    // Removed local calculateIRT (v2.1.9)
 
     const handlePrintReceipt = async (emp: Employee) => {
         if (!tenantStatus) return;
 
-        const results = calculateIRT(emp.base_salary);
+        const results = calculateAngolaPayroll(emp.base_salary);
         const data: PayrollData = {
             period: new Date().toLocaleString('pt-PT', { month: 'long', year: 'numeric' }),
             employee_name: emp.full_name,
@@ -189,7 +175,7 @@ const HRManagement: React.FC = () => {
 
     const handleCalc = (val: number) => {
         setCalcSalary(val);
-        const res = calculateIRT(val);
+        const res = calculateAngolaPayroll(val);
         setCalcResults(res);
     };
 

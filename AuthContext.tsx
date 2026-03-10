@@ -16,14 +16,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (loading) {
       const timer = setTimeout(() => {
-        console.warn('CRITICAL: Auth initialization timeout (3s). Forcing UI unlock.');
+        console.warn('CRITICAL: Auth initialization timeout (10s). Forcing UI unlock.');
         setLoading(false);
         if (user && !profile) {
           setError('A sincronização do perfil está demorada. Poderá haver lentidão em módulos de RH.');
         } else if (!user && !error) {
           setError('O carregamento está a demorar mais do que o esperado. Verifique a sua ligação.');
         }
-      }, 3000);
+      }, 10000);
       return () => clearTimeout(timer);
     }
   }, [loading, user, profile, error]);
@@ -112,7 +112,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('Session Init Error', e);
       } finally {
         // Garantimos um pequeno delay para que o React processe os estados
-        setTimeout(() => setLoading(false), 1000);
+        setLoading(false);
       }
     };
 

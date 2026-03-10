@@ -260,7 +260,7 @@ const Dashboard: React.FC<DashboardProps> = ({ variant }) => {
           <div className="space-y-4">
             <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Last Login IP</p>
-              <p className="text-xs font-mono text-indigo-300">192.168.1.104 (Portugal)</p>
+              <p className="text-xs font-mono text-indigo-300">102.65.1.204 (Angola, Luanda)</p>
             </div>
             <button className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-indigo-900/50">
               Audit Logs
