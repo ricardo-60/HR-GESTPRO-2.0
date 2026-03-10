@@ -10,8 +10,8 @@ import { OnboardingTour } from '../components/OnboardingTour';
 const StatCard: React.FC<{ title: string; value: string; icon: string; color: string; trend?: string }> = ({ title, value, icon, color, trend }) => (
   <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
     <div className="flex justify-between items-start mb-6">
-      <div className={`w-14 h-14 ${color} rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg shadow-current/10`}>
-        <i className={`fas ${icon}`}></i>
+      <div className={`w-14 h-14 ${color || 'bg-slate-400'} rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg shadow-current/10`}>
+        <i className={`fas ${icon || 'fa-info-circle'}`}></i>
       </div>
       {trend && (
         <span className={`text-[10px] font-black px-3 py-1.5 rounded-full tracking-tighter ${trend.startsWith('+') ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
@@ -56,11 +56,12 @@ const Dashboard: React.FC<DashboardProps> = ({ variant }) => {
     if (!tenantStatus?.tenant_id) return;
 
     // Buscar IBAN global
-    const { data: sData } = await supabase!
-      .from('system_settings')
+    const { data: sData, error: sError } = await (supabase?.from('system_settings')
       .select('setting_value')
       .eq('setting_key', 'global_iban')
-      .maybeSingle();
+      .maybeSingle() || { data: null, error: null });
+
+    if (sError) console.warn('Falha ao buscar IBAN global:', sError);
 
     downloadProformaPDF({
       invoiceRef: `PRF-${new Date().getFullYear()}-${tenantStatus.tenant_id.substring(0, 6).toUpperCase()}`,
@@ -210,7 +211,7 @@ const Dashboard: React.FC<DashboardProps> = ({ variant }) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-        {data.stats.map((s, i) => (
+        {(data?.stats || []).map((s, i) => (
           <StatCard key={i} {...s} />
         ))}
       </div>
