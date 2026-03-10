@@ -113,6 +113,16 @@ const AppContent: React.FC = () => {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [user]);
 
+  // Safety Timeout: Forçar entrada se o perfil demorar > 5s (v2.2.0 Hard Recovery)
+  useEffect(() => {
+    if (user && !profile) {
+      const timer = setTimeout(() => {
+        console.warn('[Security] Perfil não carregado em 5s. Ativando recuperação forçada...');
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [user, profile]);
+
   if (!checkSupabaseConfig()) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center p-8 text-center">
@@ -168,16 +178,7 @@ const AppContent: React.FC = () => {
     );
   }
 
-  // Safety Timeout: Forçar entrada se o perfil demorar > 5s
-  useEffect(() => {
-    if (user && !profile) {
-      const timer = setTimeout(() => {
-        console.warn('[Security] Perfil não carregado em 5s. Forçando verificação...');
-        // Opcional: Recarregar ou tentar buscar novamente
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [user, profile]);
+
 
   if (!profile) {
     return (
@@ -196,9 +197,30 @@ const AppContent: React.FC = () => {
             Sair da Conta e Tentar Novamente
           </button>
           <p className="text-[9px] text-slate-300 uppercase font-bold tracking-[0.2em] animate-pulse">
-            Aguarde 5 segundos para auto-recuperação
+            O sistema irá tentar recuperar automaticamente em alguns segundos
           </p>
         </div>
+      </div>
+    );
+  }
+
+  // Fallback visual para perfil não carregado após timeout
+  if (user && !profile && !loading) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-12 text-center">
+        <div className="w-16 h-16 bg-red-50 text-red-600 rounded-3xl flex items-center justify-center mb-6">
+          <i className="fas fa-exclamation-circle text-2xl"></i>
+        </div>
+        <h2 className="text-xl font-black text-slate-900 mb-2">Erro de Sincronização</h2>
+        <p className="text-slate-500 text-sm max-w-xs leading-relaxed mb-8">
+          Não foi possível carregar o seu perfil de acesso. Verifique a sua ligação ou tente novamente.
+        </p>
+        <button
+          onClick={() => signOut()}
+          className="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-bold text-sm hover:bg-indigo-700 transition-all"
+        >
+          Sair e Tentar Novamente
+        </button>
       </div>
     );
   }

@@ -19,7 +19,7 @@ export const MANUAL_CONTENT = `
 O **HR-GESTPRO 2.0** é uma solução avançada de gestão comercial desenhada para o mercado angolano, garantindo conformidade total com as normas da **AGT**.
 
 ### Instalação Desktop (Electron)
-- Execute o instalador \`HR-GESTPRO - Setup.exe\`.
+- Execute o instalador `HR-GESTPRO - Setup.exe`.
 - O sistema instalará automaticamente os drivers de base de dados e criará um atalho no seu ecrã.
 
 ### Instalação PWA (Mobile)
@@ -67,7 +67,7 @@ O HR-GESTPRO 2.0 gera documentos certificados por algoritmos de assinatura digit
 ### Exportação de SAFT-AO:
 1. Aceda a **Relatórios > Exportar SAFT**.
 2. Selecione o mês pretendido.
-3. O sistema gerará um ficheiro \`.xml\` validado, pronto para ser submetido no portal da AGT.
+3. O sistema gerará um ficheiro `.xml` validado, pronto para ser submetido no portal da AGT.
 
 ---
 

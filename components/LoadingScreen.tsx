@@ -35,14 +35,6 @@ const LoadingScreen: React.FC = () => {
                     </p>
                 </div>
             </div>
-
-            <style dangerouslySetInnerHTML={{
-                __html: `
-        @keyframes pulse-slow {
-          0%, 100% { opacity: 0.1; transform: translate(-50%, -50%) scale(1); }
-          50% { opacity: 0.2; transform: translate(-50%, -50%) scale(1.1); }
-        }
-      `}} />
         </div>
     );
 };

@@ -1,7 +1,7 @@
 {
   "name": "hr-gestpro-2.0",
   "private": true,
-  "version": "2.1.9",
+  "version": "2.2.0",
   "description": "Software de Gestão Empresarial para Angola — Faturação AGT, RH, Stock e PDV",
   "author": {
     "name": "HR Tecnologias",
@@ -72,7 +72,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.90.1",
-    "html5-qrcode": "^2.3.8",
+    "html5-qrcode": "2.3.8",
     "jspdf": "^4.2.0",
     "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.577.0",

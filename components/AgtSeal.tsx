@@ -3,24 +3,6 @@ import React from 'react';
 const AgtSeal: React.FC = () => {
     return (
         <div className="flex flex-col items-center justify-center space-y-4">
-            <style>
-                {`
-                    @keyframes rotate-light {
-                        0% { transform: rotate(0deg); }
-                        100% { transform: rotate(360deg); }
-                    }
-                    @keyframes pulse-gold {
-                        0%, 100% { filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.4)); }
-                        50% { filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.8)); }
-                    }
-                    .seal-outer {
-                        animation: rotate-light 10s linear infinite;
-                    }
-                    .seal-main {
-                        animation: pulse-gold 3s ease-in-out infinite;
-                    }
-                `}
-            </style>
 
             <div className="relative w-48 h-48 flex items-center justify-center">
                 {/* Aura de fundo */}
