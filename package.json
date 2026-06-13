@@ -4,7 +4,7 @@
   "version": "2.2.0",
   "description": "Software de Gestão Empresarial para Angola — Faturação AGT, RH, Stock e PDV",
   "author": {
-    "name": "HR Tecnologias",
+    "name": "HR-TECNOLOGIA DA INFORMAÇÃO",
     "email": "geral@hr-tecnologia.com",
     "url": "https://github.com/ricardo-60/HR-GESTPRO-2.0"
   },
@@ -12,7 +12,7 @@
   "main": "electron/main.js",
   "build": {
     "appId": "com.hrtecnologias.gestpro",
-    "productName": "HR-GESTPRO",
+    "productName": "HR-GESTPRO 2.0",
     "copyright": "Copyright © 2026 HR Tecnologias",
     "icon": "build/icon.png",
     "directories": {
@@ -57,7 +57,9 @@
       "shortcutName": "HR-GESTPRO 2.0",
       "uninstallDisplayName": "HR-GESTPRO ${version}",
       "deleteAppDataOnUninstall": false,
-      "runAfterFinish": true
+      "runAfterFinish": true,
+      "installerIcon": "build/icon.png",
+      "uninstallerIcon": "build/icon.png"
     },
     "publish": null
   },
@@ -76,9 +78,9 @@
     "jspdf": "^4.2.0",
     "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.577.0",
+    "node-fetch": "^2.7.0",
     "react": "^19.2.3",
-    "react-dom": "^19.2.3",
-    "node-fetch": "^2.6.9"
+    "react-dom": "^19.2.3"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
