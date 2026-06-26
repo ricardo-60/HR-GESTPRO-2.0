@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { dataLayer as supabase } from '../lib/dataLayer';
 import { Product, InventoryLog } from '../types';
 
 export const useInventory = (tenantId: string | null) => {

@@ -87,14 +87,25 @@ function createWindow() {
     });
 
     if (process.env.NODE_ENV === 'development') {
-        mainWindow.loadURL('http://localhost:5173');
+        mainWindow.loadURL('http://localhost:3001');
         mainWindow.webContents.openDevTools();
     } else {
         mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
     }
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+    // Definir caminhos de dados para o SQLite antes de carregar o server.js
+    process.env.USER_DATA_PATH = app.getPath('userData');
+    
+    try {
+        console.log('[ElectronMain] A iniciar servidor Express local...');
+        await import('./server.js');
+        console.log('[ElectronMain] Servidor local carregado.');
+    } catch (err) {
+        console.error('[ElectronMain] Falha ao iniciar servidor local:', err);
+    }
+
     createWindow();
 
     // 3. Prevent App from sleeping too aggressively

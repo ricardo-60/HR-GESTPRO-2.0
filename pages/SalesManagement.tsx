@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
-import { supabase } from '../lib/supabase';
+import { dataLayer as supabase } from '../lib/dataLayer';
 import { SalesDashboard } from '../components/Sales/SalesDashboard';
 import { SaleHistory } from '../components/Sales/SaleHistory';
 import { PosTerminal } from '../components/Sales/PosTerminal';

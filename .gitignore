@@ -23,3 +23,17 @@ dist-ssr
 *.sln
 *.sw?
 dist_electron/
+
+# Portables
+node_portable/
+git_portable/
+get_node.ps1
+get_git.ps1
+run_npm.js
+install_deps.js
+
+# Databases locais e logs de runtime
+*.db
+*_log.txt
+*.log
+

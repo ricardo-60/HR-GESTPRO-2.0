@@ -31,6 +31,7 @@ export const Sidebar: React.FC<{
     { id: 'saft', label: 'Exportar SAFT-AO', icon: 'fa-file-export', roles: [UserRole.MASTER, UserRole.ADMIN], path: 'saft' },
     { id: 'keys', label: 'Chaves AGT', icon: 'fa-key', roles: [UserRole.MASTER, UserRole.ADMIN], path: 'keys' },
     { id: 'cfg', label: 'Configurações', icon: 'fa-cog', roles: [UserRole.MASTER, UserRole.ADMIN], path: 'settings' },
+    { id: 'auto', label: 'Autonomia', icon: 'fa-toolbox', roles: [UserRole.MASTER, UserRole.ADMIN, UserRole.RH, UserRole.FINANCE, UserRole.SALES], path: 'autonomy' },
     { id: 'help', label: 'Ajuda & Suporte', icon: 'fa-question-circle', roles: [UserRole.MASTER, UserRole.ADMIN, UserRole.RH, UserRole.FINANCE, UserRole.SALES], path: 'help' },
   ];
 
@@ -41,9 +42,9 @@ export const Sidebar: React.FC<{
       ${isOpen ? 'w-64' : 'w-20'} 
       ${!isOpen && 'lg:w-20 w-0'}
       fixed lg:relative z-50
-      bg-slate-900 h-full transition-all duration-300 flex flex-col border-r border-slate-800 shadow-xl overflow-hidden
+      bg-slate-900 dark:bg-slate-950 h-full transition-all duration-300 flex flex-col border-r border-slate-800 dark:border-slate-900 shadow-xl overflow-hidden
     `}>
-      <div className="p-6 flex items-center space-x-3 border-b border-slate-800 bg-slate-900 shrink-0">
+      <div className="p-6 flex items-center space-x-3 border-b border-slate-800 dark:border-slate-900 bg-slate-900 dark:bg-slate-950 shrink-0">
         <div className="w-9 h-9 bg-white/5 rounded-lg p-1.5 border border-white/10 flex items-center justify-center shrink-0 shadow-lg">
           <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
             <path d="M20 80L40 50L35 45L60 20L55 50L65 55L45 80H20Z" fill="#EA580C" />
@@ -60,7 +61,7 @@ export const Sidebar: React.FC<{
             onClick={() => onNavigate(item.path)}
             className={`flex items-center space-x-3 w-full p-3 rounded-xl cursor-pointer transition-all group ${currentPath === item.path
               ? 'bg-indigo-600 text-white'
-              : 'hover:bg-slate-800 text-slate-400 hover:text-white'
+              : 'hover:bg-slate-800 dark:hover:bg-slate-800/60 text-slate-400 hover:text-white'
               }`}
           >
             <i className={`fas ${item.icon} w-5 text-center group-hover:scale-110 transition-transform`}></i>
@@ -69,7 +70,7 @@ export const Sidebar: React.FC<{
         ))}
       </nav>
 
-      <div className="p-4 border-t border-slate-800 bg-slate-900/50 shrink-0">
+      <div className="p-4 border-t border-slate-800 dark:border-slate-900 bg-slate-900/50 dark:bg-slate-950/50 shrink-0">
         {isOpen && (
           <div className="mb-4 px-2">
             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Organização</p>

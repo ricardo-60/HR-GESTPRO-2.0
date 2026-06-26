@@ -86,6 +86,10 @@ export interface TenantStatusInfo {
   plan_type?: string;
   tax_regime?: 'Exclusion' | 'General';
   allow_negative_stock?: boolean;
+  tax_id?: string;
+  address?: string;
+  phone?: string;
+  logo_url?: string;
 }
 
 export interface AuthContextType {
@@ -141,3 +145,64 @@ export interface AccountPayable {
   status: 'pending' | 'paid' | 'overdue';
   paid_at?: string;
 }
+
+export type SyncStatus = 'synced' | 'pending' | 'conflict';
+
+export interface Employee {
+  id: string;
+  tenant_id: string;
+  department_id?: string;
+  full_name: string;
+  first_name?: string;
+  last_name?: string;
+  id_card?: string;
+  nif?: string;
+  inss?: string;
+  iban?: string;
+  birth_date?: string;
+  role?: string;
+  job_title?: string;
+  contact_email?: string;
+  email?: string;
+  contact_phone?: string;
+  phone?: string;
+  base_salary: number;
+  currency?: string;
+  hire_date: string;
+  status: 'active' | 'on_leave' | 'inactive' | 'terminated';
+  created_at?: string;
+  updated_at?: string;
+  sync_status?: SyncStatus;
+}
+
+export interface AttendanceLog {
+  id: string;
+  tenant_id: string;
+  employee_id: string;
+  date: string;
+  status: 'present' | 'absent' | 'on_leave' | 'late';
+  check_in?: string;
+  check_out?: string;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
+  sync_status?: SyncStatus;
+}
+
+export interface PayrollRecord {
+  id: string;
+  tenant_id: string;
+  employee_id: string;
+  period_month: number;
+  period_year: number;
+  gross_pay: number;
+  net_pay: number;
+  inss_employee?: number;
+  inss_employer?: number;
+  irt?: number;
+  status: 'draft' | 'processed' | 'paid';
+  created_at?: string;
+  updated_at?: string;
+  sync_status?: SyncStatus;
+}
+

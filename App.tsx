@@ -5,6 +5,7 @@ import { UserRole, TenantStatus } from './types';
 import { checkSupabaseConfig, SUPABASE_URL, SUPABASE_ANON_KEY } from './lib/supabase';
 import Layout from './components/Layout';
 import LoadingScreen from './components/LoadingScreen';
+import ErrorBoundary from './components/ErrorBoundary';
 const Login = lazy(() => import('./pages/Login'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 
@@ -22,6 +23,7 @@ const SaftExport = lazy(() => import('./pages/SaftExport'));
 const KeyManagement = lazy(() => import('./pages/KeyManagement'));
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const HelpCenter = lazy(() => import('./pages/HelpCenter'));
+const AutonomyPanel = lazy(() => import('./pages/AutonomyPanel'));
 
 /**
  * MainRouter: Core SPA Navigation Logic.
@@ -31,6 +33,38 @@ const MainRouter: React.FC = () => {
   const [currentPath, setCurrentPath] = useState('dashboard');
 
   const renderContent = () => {
+    // Matriz de controle de acessos baseada nas roles
+    const routeRoles: Record<string, UserRole[]> = {
+      dashboard: [UserRole.MASTER, UserRole.ADMIN, UserRole.RH, UserRole.FINANCE, UserRole.SALES],
+      sales: [UserRole.MASTER, UserRole.ADMIN, UserRole.SALES],
+      companies: [UserRole.MASTER, UserRole.ADMIN],
+      users: [UserRole.MASTER, UserRole.ADMIN],
+      rh: [UserRole.MASTER, UserRole.ADMIN, UserRole.RH],
+      suppliers: [UserRole.MASTER, UserRole.ADMIN, UserRole.FINANCE],
+      purchases: [UserRole.MASTER, UserRole.ADMIN, UserRole.FINANCE],
+      reports: [UserRole.MASTER, UserRole.ADMIN, UserRole.FINANCE],
+      finance: [UserRole.MASTER, UserRole.ADMIN, UserRole.FINANCE],
+      saft: [UserRole.MASTER, UserRole.ADMIN],
+      keys: [UserRole.MASTER, UserRole.ADMIN],
+      settings: [UserRole.MASTER, UserRole.ADMIN],
+      autonomy: [UserRole.MASTER, UserRole.ADMIN, UserRole.RH, UserRole.FINANCE, UserRole.SALES],
+      help: [UserRole.MASTER, UserRole.ADMIN, UserRole.RH, UserRole.FINANCE, UserRole.SALES]
+    };
+
+    if (role && routeRoles[currentPath] && !routeRoles[currentPath].includes(role)) {
+      return (
+        <div className="min-h-[50vh] flex flex-col items-center justify-center text-center p-8 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-xl transition-colors duration-300">
+          <div className="w-16 h-16 bg-rose-500/10 text-rose-500 dark:text-rose-400 rounded-3xl flex items-center justify-center mb-6">
+            <i className="fas fa-shield-alt text-2xl animate-pulse"></i>
+          </div>
+          <h2 className="text-2xl font-black text-slate-950 dark:text-white mb-2">Acesso Restrito</h2>
+          <p className="text-slate-500 dark:text-slate-400 text-sm max-w-md leading-relaxed">
+            Não possui privilégios suficientes para aceder ao módulo <span className="font-bold text-slate-800 dark:text-slate-200">"{currentPath}"</span>. Por favor, contacte o seu administrador.
+          </p>
+        </div>
+      );
+    }
+
     // Access Guards
     if (currentPath === 'users' && (role === UserRole.ADMIN || role === UserRole.MASTER)) {
       return <UserManagement />;
@@ -66,6 +100,8 @@ const MainRouter: React.FC = () => {
       case 'settings':
         if (role === UserRole.MASTER) return <MasterSettings />;
         return <Dashboard variant="admin" />;
+      case 'autonomy':
+        return <AutonomyPanel />;
       case 'help':
         return <HelpCenter />;
       default:
@@ -234,9 +270,11 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ErrorBoundary>
   );
 };
 

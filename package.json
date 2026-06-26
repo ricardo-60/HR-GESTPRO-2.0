@@ -1,7 +1,7 @@
 {
   "name": "hr-gestpro-2.0",
   "private": true,
-  "version": "2.2.0",
+  "version": "2.2.2",
   "description": "Software de Gestão Empresarial para Angola — Faturação AGT, RH, Stock e PDV",
   "author": {
     "name": "HR-TECNOLOGIA DA INFORMAÇÃO",
@@ -14,7 +14,6 @@
     "appId": "com.hrtecnologias.gestpro",
     "productName": "HR-GESTPRO 2.0",
     "copyright": "Copyright © 2026 HR Tecnologias",
-    "icon": "build/icon.png",
     "directories": {
       "output": "dist_electron",
       "buildResources": "build"
@@ -33,18 +32,15 @@
           ]
         }
       ],
-      "icon": "build/icon.png",
       "requestedExecutionLevel": "asInvoker",
       "artifactName": "HR-GESTPRO-Setup-${version}.exe"
     },
     "mac": {
       "target": "dmg",
-      "icon": "build/icon.png",
       "category": "public.app-category.business"
     },
     "linux": {
       "target": "AppImage",
-      "icon": "build/icon.png",
       "category": "Office"
     },
     "nsis": {
@@ -57,9 +53,7 @@
       "shortcutName": "HR-GESTPRO 2.0",
       "uninstallDisplayName": "HR-GESTPRO ${version}",
       "deleteAppDataOnUninstall": false,
-      "runAfterFinish": true,
-      "installerIcon": "build/icon.png",
-      "uninstallerIcon": "build/icon.png"
+      "runAfterFinish": true
     },
     "publish": null
   },
@@ -74,6 +68,8 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.90.1",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
     "html5-qrcode": "2.3.8",
     "jspdf": "^4.2.0",
     "jspdf-autotable": "^5.0.7",
@@ -87,11 +83,14 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
     "@types/node": "^22.19.13",
     "@vitejs/plugin-react": "^5.0.0",
     "electron": "^40.7.0",
     "electron-builder": "^26.8.1",
-    "jsdom": "^28.1.0",
+    "jsdom": "26.1.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0",
     "vitest": "^4.0.18"

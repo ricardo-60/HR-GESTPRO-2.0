@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { dataLayer as supabase } from '../lib/dataLayer';
 import { Supplier } from '../types';
 
 export function useSuppliers() {

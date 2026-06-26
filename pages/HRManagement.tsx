@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
-import { supabase } from '../lib/supabase';
+import { dataLayer as supabase, isOnline } from '../lib/dataLayer';
+import { syncEngine, SyncState } from '../lib/syncEngine';
 import { generatePayrollPDF, PayrollData } from '../lib/PayrollGenerator';
 import { calculateAngolaPayroll } from '../lib/PayrollCalculations';
 
@@ -25,6 +26,25 @@ const HRManagement: React.FC = () => {
     const { tenantStatus, tenantId } = useAuth();
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [loading, setLoading] = useState(true);
+
+    const [online, setOnline] = useState(isOnline());
+    const [syncStateInfo, setSyncStateInfo] = useState({ state: 'idle' as SyncState, pending: 0 });
+
+    useEffect(() => {
+        const handleStatusChange = () => setOnline(isOnline());
+        window.addEventListener('connection-status-change', handleStatusChange);
+        window.addEventListener('sync-status-change', handleStatusChange);
+        
+        const unsubscribe = syncEngine.subscribe((state, pending) => {
+            setSyncStateInfo({ state, pending });
+        });
+
+        return () => {
+            window.removeEventListener('connection-status-change', handleStatusChange);
+            window.removeEventListener('sync-status-change', handleStatusChange);
+            unsubscribe();
+        };
+    }, []);
 
     // UI State
     const [showAddModal, setShowAddModal] = useState(false);
@@ -206,8 +226,26 @@ const HRManagement: React.FC = () => {
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 border-b border-gray-100 pb-8">
                 <div>
-                    <h2 className="text-3xl font-black text-slate-900 tracking-tighter mb-2">Recursos Humanos</h2>
-                    <p className="text-slate-500 font-medium">
+                    <div className="flex flex-wrap items-center gap-3">
+                        <h2 className="text-3xl font-black text-slate-900 tracking-tighter">Recursos Humanos</h2>
+                        {online ? (
+                            <span className="bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-emerald-200 flex items-center space-x-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                                <span>Rede Online</span>
+                            </span>
+                        ) : (
+                            <span className="bg-rose-50 text-rose-600 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-rose-200 flex items-center space-x-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                                <span>Rede Local (Offline)</span>
+                            </span>
+                        )}
+                        {syncStateInfo.pending > 0 && (
+                            <span className="bg-amber-50 text-amber-600 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-amber-200 animate-pulse">
+                                {syncStateInfo.state === 'syncing' ? 'A Sincronizar' : 'Pendentes'}: {syncStateInfo.pending} ops
+                            </span>
+                        )}
+                    </div>
+                    <p className="text-slate-500 font-medium mt-2">
                         Gestão de equipas: <span className="text-indigo-600 font-bold">{tenantStatus?.company_name || 'Organização'}</span>
                     </p>
                 </div>

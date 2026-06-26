@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { dataLayer as supabase } from '../lib/dataLayer';
 import { useAuth } from '../AuthContext';
 import { Tenant, TenantStatus, UserRole } from '../types';
 

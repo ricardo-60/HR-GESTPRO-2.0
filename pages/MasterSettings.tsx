@@ -4,7 +4,7 @@ import {
     RefreshCw, AlertCircle, CheckCircle2, Loader2, Clock,
     Download, TrendingUp, ShieldCheck, BanknoteIcon
 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { dataLayer as supabase } from '../lib/dataLayer';
 import { downloadProformaPDF } from '../lib/ProformaGenerator';
 import { ManualGenerator } from '../lib/ManualGenerator';
 

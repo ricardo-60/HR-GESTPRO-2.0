@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { usePurchases } from '../hooks/usePurchases';
 import { useSuppliers } from '../hooks/useSuppliers';
-import { supabase } from '../lib/supabase';
+import { dataLayer as supabase } from '../lib/dataLayer';
 import { Product, Supplier } from '../types';
 import {
     Plus,

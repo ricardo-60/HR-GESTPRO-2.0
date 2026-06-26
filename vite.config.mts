@@ -29,7 +29,15 @@ export default defineConfig(({ mode }) => {
       globals: true,
       environment: 'jsdom',
       setupFiles: './vitest.setup.ts',
-      exclude: ['node_modules', 'dist', '.idea', '.git', '.cache', 'tests/e2e/**'],
+      exclude: ['node_modules', 'dist', '.idea', '.git', '.cache', 'tests/e2e/**', 'teste/**'],
+      deps: {
+        inline: ['@exodus/bytes', 'html-encoding-sniffer', 'jsdom']
+      },
+      server: {
+        deps: {
+          inline: ['@exodus/bytes', 'html-encoding-sniffer', 'jsdom']
+        }
+      }
     }
   };
 });

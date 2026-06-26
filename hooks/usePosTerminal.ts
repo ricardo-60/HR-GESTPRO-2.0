@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { dataLayer as supabase } from '../lib/dataLayer';
 import { InvoiceItem as LibInvoiceItem } from '../lib/InvoiceGenerator';
 
 interface PosSession {
