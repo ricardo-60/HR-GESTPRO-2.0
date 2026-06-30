@@ -1,6 +1,7 @@
 {
   "name": "hr-gestpro-2.0",
   "private": true,
+  "type": "module",
   "version": "2.2.2",
   "description": "Software de Gestão Empresarial para Angola — Faturação AGT, RH, Stock e PDV",
   "author": {
@@ -64,7 +65,9 @@
     "electron:dev": "electron .",
     "electron:build": "vite build && electron-builder --win",
     "electron:build:all": "vite build && electron-builder --win --linux",
-    "test": "vitest run"
+    "test": "vitest run",
+    "setup:client": "node scripts/build-client.js",
+    "setup:server": "node scripts/build-server.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.90.1",
@@ -87,6 +90,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^22.19.13",
+    "@types/react": "^19.2.17",
     "@vitejs/plugin-react": "^5.0.0",
     "electron": "^40.7.0",
     "electron-builder": "^26.8.1",

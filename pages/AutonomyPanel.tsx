@@ -232,7 +232,7 @@ export default function AutonomyPanel() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 border-b border-gray-100 dark:border-slate-800 pb-8">
         <div>
-          <h2 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter mb-2 font-black">Painel de Autonomia</h2>
+          <h2 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter mb-2">Painel de Autonomia</h2>
           <p className="text-slate-400 dark:text-slate-400 font-medium text-lg">Diagnósticos, Self-Healing e Gestão de Dados Offline</p>
         </div>
         

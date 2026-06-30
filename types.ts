@@ -52,6 +52,7 @@ export interface Product {
   is_exempt: boolean;
   exemption_reason?: string;
   image_url?: string;
+  category?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -86,6 +87,7 @@ export interface TenantStatusInfo {
   plan_type?: string;
   tax_regime?: 'Exclusion' | 'General';
   allow_negative_stock?: boolean;
+  is_iva_enabled?: boolean;
   tax_id?: string;
   address?: string;
   phone?: string;
@@ -99,6 +101,7 @@ export interface AuthContextType {
   tenantId: string | null;
   tenantStatus: TenantStatusInfo | null;
   loading: boolean;
+  error: string | null;
   signOut: () => Promise<void>;
 }
 

@@ -173,6 +173,37 @@ const HelpCenter: React.FC = () => {
                     </p>
                 </div>
             )
+        },
+        {
+            id: 'hospitality',
+            title: '6. Módulos de Hospitalidade e Snack-Bar',
+            icon: 'fa-hotel',
+            content: (
+                <div className="space-y-4">
+                    <p className="text-slate-600 leading-relaxed font-medium">
+                        O sistema de hospitalidade (<strong>HR Hospitality</strong>) pode rodar de forma descentralizada na rede interna da empresa, comunicando-se diretamente com a base central na porta <strong>3002</strong>.
+                    </p>
+                    <ul className="space-y-3 text-slate-600 font-medium">
+                        <li className="flex items-start space-x-3">
+                            <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 mt-1.5"></span>
+                            <span><strong>Lançamentos nos Quartos:</strong> Permite que os consumos realizados no Snack Bar/Restaurante sejam debitados de forma direta na ficha de estadia ativa do hóspede, registando despesas na tabela local de consumos.</span>
+                        </li>
+                        <li className="flex items-start space-x-3">
+                            <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 mt-1.5"></span>
+                            <span><strong>Perfil Snack Bar Restrito:</strong> Operadores com perfil restrito acedem exclusivamente ao terminal de vendas rápido do Snack Bar, bloqueando painéis de faturação e dados de Recursos Humanos.</span>
+                        </li>
+                    </ul>
+                    <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-5 text-indigo-900 text-sm">
+                        <h4 className="font-bold flex items-center space-x-2 mb-2">
+                            <i className="fas fa-network-wired"></i>
+                            <span>Conexão de Terminais de Venda</span>
+                        </h4>
+                        <p className="font-medium text-indigo-700 leading-relaxed">
+                            No ecrã de login do terminal do Snack Bar (Cliente), aceda a "Configurações de Rede Local", mude o modo para "Cliente" e aponte para o IP da máquina do Servidor Central para que todas as consultas e lançamentos ocorram na base unificada.
+                        </p>
+                    </div>
+                </div>
+            )
         }
     ];
 

@@ -24,6 +24,7 @@ const KeyManagement = lazy(() => import('./pages/KeyManagement'));
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const HelpCenter = lazy(() => import('./pages/HelpCenter'));
 const AutonomyPanel = lazy(() => import('./pages/AutonomyPanel'));
+const StockManagementLazy = lazy(() => import('./pages/StockManagement'));
 
 /**
  * MainRouter: Core SPA Navigation Logic.
@@ -48,7 +49,8 @@ const MainRouter: React.FC = () => {
       keys: [UserRole.MASTER, UserRole.ADMIN],
       settings: [UserRole.MASTER, UserRole.ADMIN],
       autonomy: [UserRole.MASTER, UserRole.ADMIN, UserRole.RH, UserRole.FINANCE, UserRole.SALES],
-      help: [UserRole.MASTER, UserRole.ADMIN, UserRole.RH, UserRole.FINANCE, UserRole.SALES]
+      help: [UserRole.MASTER, UserRole.ADMIN, UserRole.RH, UserRole.FINANCE, UserRole.SALES],
+      stock: [UserRole.MASTER, UserRole.ADMIN, UserRole.FINANCE]
     };
 
     if (role && routeRoles[currentPath] && !routeRoles[currentPath].includes(role)) {
@@ -102,6 +104,8 @@ const MainRouter: React.FC = () => {
         return <Dashboard variant="admin" />;
       case 'autonomy':
         return <AutonomyPanel />;
+      case 'stock':
+        return <StockManagementLazy />;
       case 'help':
         return <HelpCenter />;
       default:
@@ -135,13 +139,19 @@ const AppContent: React.FC = () => {
   // Wake-up Check: Re-validate session when window regains focus
   useEffect(() => {
     const handleVisibilityChange = async () => {
-      if (document.visibilityState === 'visible' && user) {
-        console.log('[Wake-Up] App visível, a validar sessão...');
-        const { data, error } = await (await import('./lib/supabase')).supabase.auth.getSession();
-        if (error || !data.session) {
-          console.warn('[Wake-Up] Sessão expirada ou inválida, a redirecionar...');
-          window.location.reload();
+      try {
+        if (document.visibilityState === 'visible' && user) {
+          console.log('[Wake-Up] App visível, a validar sessão...');
+          const { supabase } = await import('./lib/supabase');
+          const response = await supabase.auth.getSession();
+          if (response.error || !response.data?.session) {
+            console.warn('[Wake-Up] Sessão expirada ou inválida, a redirecionar...');
+            window.location.reload();
+          }
         }
+      } catch (err) {
+        console.error('[Wake-Up] Erro crítico ao validar sessão:', err);
+        // Não quebrar a app em caso de falha de rede temporária
       }
     };
 

@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { dataLayer as supabase } from '../lib/dataLayer';
 import { Supplier } from '../types';
+import { useAuth } from '../AuthContext';
 
 export function useSuppliers() {
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const { tenantId } = useAuth();
 
     useEffect(() => {
         fetchSuppliers();
@@ -30,14 +32,11 @@ export function useSuppliers() {
 
     async function addSupplier(supplier: Omit<Supplier, 'id' | 'tenant_id' | 'created_at'>) {
         try {
-            // O tenant_id é injetado automaticamente pelo RLS se configurado via trigger ou podemos pegar do Auth
-            // Mas para garantir, vamos buscar o tenant_id do perfil logado
-            const { data: profile } = await supabase.from('user_profiles').select('tenant_id').single();
-            if (!profile) throw new Error('Tenant não encontrado');
+            if (!tenantId) throw new Error('Tenant não encontrado. Certifique-se de que está autenticado.');
 
             const { data, error } = await supabase
                 .from('suppliers')
-                .insert([{ ...supplier, tenant_id: profile.tenant_id }])
+                .insert([{ ...supplier, tenant_id: tenantId }])
                 .select()
                 .single();
 

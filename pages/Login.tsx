@@ -178,7 +178,7 @@ const Login: React.FC = () => {
               <button 
                 type="submit" 
                 disabled={loading} 
-                className="w-full bg-gradient-to-r from-indigo-600 to-violet-650 hover:from-indigo-500 hover:to-violet-500 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-[0.98] disabled:opacity-50 shadow-lg shadow-indigo-500/20"
+                className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-[0.98] disabled:opacity-50 shadow-lg shadow-indigo-500/20"
               >
                 {loading ? 'A Enviar...' : 'Recuperar Acesso'}
               </button>
@@ -261,7 +261,7 @@ const Login: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-indigo-600 to-violet-650 hover:from-indigo-500 hover:to-violet-500 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-indigo-900/35 hover:shadow-indigo-500/30 transition-all flex items-center justify-center space-x-2 active:scale-[0.98] disabled:opacity-50"
+              className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-indigo-900/35 hover:shadow-indigo-500/30 transition-all flex items-center justify-center space-x-2 active:scale-[0.98] disabled:opacity-50"
             >
               {loading ? (
                 <><RefreshCw className="w-4 h-4 animate-spin mr-2" /> <span>A Processar...</span></>

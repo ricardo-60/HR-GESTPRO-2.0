@@ -49,6 +49,24 @@ const HRManagement: React.FC = () => {
     // UI State
     const [showAddModal, setShowAddModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [currentTab, setCurrentTab] = useState<'employees' | 'attendance' | 'leaves'>('employees');
+
+    // Data States
+    const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
+    const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
+
+    // Form & Modal States
+    const [showLeaveModal, setShowLeaveModal] = useState(false);
+    const [leaveForm, setLeaveForm] = useState({
+        employee_id: '',
+        leave_type: 'vacation',
+        start_date: '',
+        end_date: '',
+        reason: ''
+    });
+
+    const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().split('T')[0]);
+    const [attendanceNotes, setAttendanceNotes] = useState<{ [key: string]: string }>({});
 
     // Form State
     const [formData, setFormData] = useState({
@@ -68,6 +86,30 @@ const HRManagement: React.FC = () => {
     const [calcSalary, setCalcSalary] = useState(0);
     const [calcResults, setCalcResults] = useState({ inss: 0, irt: 0, net: 0 });
 
+    const fetchLeaveRequests = async () => {
+        if (!supabase) return;
+        const { data, error } = await supabase
+            .from('leave_requests')
+            .select('*, employees(full_name)')
+            .order('created_at', { ascending: false });
+
+        if (!error) {
+            setLeaveRequests(data || []);
+        }
+    };
+
+    const fetchAttendanceLogs = async () => {
+        if (!supabase) return;
+        const { data, error } = await supabase
+            .from('attendance_logs')
+            .select('*, employees(full_name)')
+            .eq('date', attendanceDate);
+
+        if (!error) {
+            setAttendanceLogs(data || []);
+        }
+    };
+
     const fetchEmployees = async () => {
         if (!supabase) return;
         setLoading(true);
@@ -81,6 +123,8 @@ const HRManagement: React.FC = () => {
         } else {
             setEmployees(data || []);
         }
+        await fetchLeaveRequests();
+        await fetchAttendanceLogs();
         setLoading(false);
     };
 
@@ -88,16 +132,19 @@ const HRManagement: React.FC = () => {
         fetchEmployees();
     }, [tenantId]);
 
+    useEffect(() => {
+        fetchAttendanceLogs();
+    }, [attendanceDate]);
+
     const handleAddSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!supabase || !tenantId) return;
 
-        // Auditoria e mapeamento de campos (v2.1.5)
         const payload = {
             tenant_id: tenantId,
             full_name: formData.full_name,
-            email: formData.contact_email, // Mapeado para o campo 'email' da DB
-            job_title: formData.role,      // Mapeado para 'job_title'
+            email: formData.contact_email,
+            job_title: formData.role,
             base_salary: formData.base_salary,
             id_card: formData.id_card,
             nif: formData.nif,
@@ -105,7 +152,7 @@ const HRManagement: React.FC = () => {
             iban: formData.iban,
             birth_date: formData.birth_date || null,
             phone: formData.contact_phone,
-            hire_date: new Date().toISOString().split('T')[0], // Default para hoje se não especificado
+            hire_date: new Date().toISOString().split('T')[0],
             status: 'active'
         };
 
@@ -134,22 +181,90 @@ const HRManagement: React.FC = () => {
         }
     };
 
-    const handleAttendance = async (employeeId: string, status: 'present' | 'absent' | 'on_leave') => {
+    const handleAttendance = async (employeeId: string, status: 'present' | 'absent' | 'on_leave' | 'late') => {
         if (!supabase || !tenantId) return;
-        // In a real scenario we'd query today's logs and insert or update
-        // Simplified mapping: just marking check-in placeholder
+        const note = attendanceNotes[employeeId] || '';
+        
         const { error } = await supabase.from('attendance_logs').upsert({
             tenant_id: tenantId,
             employee_id: employeeId,
-            date: new Date().toISOString().split('T')[0],
+            date: attendanceDate,
             status: status,
-            check_in: status === 'present' ? new Date().toISOString() : null
-        }, { onConflict: 'employee_id, date' });
+            notes: note,
+            check_in: status === 'present' || status === 'late' ? new Date().toISOString() : null
+        });
 
         if (error) {
             alert('Erro ao registar assiduidade: ' + error.message);
         } else {
-            alert(`Ponto registado como: ${status}`);
+            alert(`Ponto registado para a data ${attendanceDate}`);
+            fetchAttendanceLogs();
+        }
+    };
+
+    const handleCreateLeave = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!supabase || !tenantId) return;
+
+        if (!leaveForm.employee_id) return alert('Selecione um colaborador.');
+        if (!leaveForm.start_date || !leaveForm.end_date) return alert('Insira o período completo.');
+
+        const { error } = await supabase.from('leave_requests').insert([{
+            tenant_id: tenantId,
+            employee_id: leaveForm.employee_id,
+            leave_type: leaveForm.leave_type,
+            start_date: leaveForm.start_date,
+            end_date: leaveForm.end_date,
+            reason: leaveForm.reason,
+            status: 'pending'
+        }]);
+
+        if (error) {
+            alert('Erro ao submeter pedido: ' + error.message);
+        } else {
+            alert('Solicitação de licença criada com sucesso!');
+            setShowLeaveModal(false);
+            setLeaveForm({ employee_id: '', leave_type: 'vacation', start_date: '', end_date: '', reason: '' });
+            fetchLeaveRequests();
+        }
+    };
+
+    const handleApproveLeave = async (req: any) => {
+        if (!supabase) return;
+        
+        // 1. Aprovar a licença
+        const { error: reqError } = await supabase
+            .from('leave_requests')
+            .update({ status: 'approved' })
+            .eq('id', req.id);
+
+        if (reqError) {
+            alert('Erro ao aprovar: ' + reqError.message);
+            return;
+        }
+
+        // 2. Mudar o estado do colaborador para on_leave
+        await supabase
+            .from('employees')
+            .update({ status: 'on_leave' })
+            .eq('id', req.employee_id);
+
+        alert('Licença aprovada e funcionário colocado em férias/licença.');
+        fetchEmployees();
+    };
+
+    const handleRejectLeave = async (reqId: string) => {
+        if (!supabase) return;
+        const { error } = await supabase
+            .from('leave_requests')
+            .update({ status: 'rejected' })
+            .eq('id', reqId);
+
+        if (error) {
+            alert('Erro ao rejeitar: ' + error.message);
+        } else {
+            alert('Licença rejeitada.');
+            fetchLeaveRequests();
         }
     };
 
@@ -157,8 +272,6 @@ const HRManagement: React.FC = () => {
         e.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         e.role.toLowerCase().includes(searchTerm.toLowerCase())
     );
-
-    // Removed local calculateIRT (v2.1.9)
 
     const handlePrintReceipt = async (emp: Employee) => {
         if (!tenantStatus) return;
@@ -174,7 +287,7 @@ const HRManagement: React.FC = () => {
             employee_iban: emp.iban,
             base_salary: emp.base_salary,
             inss_employee: results.inss,
-            inss_employer: emp.base_salary * 0.08, // 8% da entidade empregadora
+            inss_employer: emp.base_salary * 0.08,
             irt: results.irt,
             net_salary: results.net
         };
@@ -224,6 +337,7 @@ const HRManagement: React.FC = () => {
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 border-b border-gray-100 pb-8">
                 <div>
                     <div className="flex flex-wrap items-center gap-3">
@@ -249,11 +363,7 @@ const HRManagement: React.FC = () => {
                         Gestão de equipas: <span className="text-indigo-600 font-bold">{tenantStatus?.company_name || 'Organização'}</span>
                     </p>
                 </div>
-                <div className="flex gap-3">
-                    <button className="bg-white hover:bg-gray-50 text-slate-700 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest border border-gray-200 transition-all flex items-center space-x-2">
-                        <i className="fas fa-file-export"></i>
-                        <span>Exportar PDF</span>
-                    </button>
+                <div className="flex flex-wrap gap-3">
                     <button
                         onClick={() => setShowCalculatorModal(true)}
                         className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-emerald-200 transition-all flex items-center space-x-2"
@@ -271,7 +381,8 @@ const HRManagement: React.FC = () => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Quick Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-rose-50 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110"></div>
                     <div className="relative">
@@ -279,7 +390,29 @@ const HRManagement: React.FC = () => {
                             <i className="fas fa-money-check-alt"></i>
                         </div>
                         <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-1">Folha Salarial Base</p>
-                        <p className="text-2xl font-black text-slate-800 tracking-tighter">KZ {totalPayroll.toLocaleString()}</p>
+                        <p className="text-xl font-black text-slate-800 tracking-tighter">KZ {totalPayroll.toLocaleString()}</p>
+                    </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-50 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110"></div>
+                    <div className="relative">
+                        <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center text-xl mb-4">
+                            <i className="fas fa-users"></i>
+                        </div>
+                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-1">Ativos / Total</p>
+                        <p className="text-xl font-black text-slate-800 tracking-tighter">{activeCount} / {employees.length}</p>
+                    </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-amber-50 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110"></div>
+                    <div className="relative">
+                        <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center text-xl mb-4">
+                            <i className="fas fa-plane-departure"></i>
+                        </div>
+                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-1">Em Licença / Férias</p>
+                        <p className="text-xl font-black text-slate-800 tracking-tighter">{leaveCount}</p>
                     </div>
                 </div>
 
@@ -289,117 +422,323 @@ const HRManagement: React.FC = () => {
                         <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center text-xl mb-4">
                             <i className="fas fa-birthday-cake"></i>
                         </div>
-                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-1">Aniversariantes ({new Date().toLocaleString('pt-PT', { month: 'long' })})</p>
-                        <p className="text-3xl font-black text-slate-800 tracking-tighter">{birthdayCount}</p>
+                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-1">Aniversariantes do Mês</p>
+                        <p className="text-xl font-black text-slate-800 tracking-tighter">{birthdayCount}</p>
                     </div>
                 </div>
             </div>
 
-            <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-xl shadow-slate-200/20 overflow-hidden mt-8">
-                <div className="p-8 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
-                    <h3 className="font-black text-slate-900 uppercase text-xs tracking-[0.2em]">Diretório de Colaboradores</h3>
-                    <div className="relative">
-                        <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                        <input
-                            type="text"
-                            placeholder="Procurar nome ou cargo..."
-                            className="pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none w-72 transition-shadow shadow-sm"
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                        />
+            {/* Internal Tabs Navigation */}
+            <div className="flex space-x-1 bg-gray-100 p-1.5 rounded-2xl max-w-lg shadow-inner">
+                <button
+                    onClick={() => setCurrentTab('employees')}
+                    className={`flex-1 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition-all ${
+                        currentTab === 'employees' ? 'bg-white text-slate-900 shadow-md' : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                >
+                    Colaboradores
+                </button>
+                <button
+                    onClick={() => setCurrentTab('attendance')}
+                    className={`flex-1 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition-all ${
+                        currentTab === 'attendance' ? 'bg-white text-slate-900 shadow-md' : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                >
+                    Controlo de Faltas
+                </button>
+                <button
+                    onClick={() => setCurrentTab('leaves')}
+                    className={`flex-1 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition-all ${
+                        currentTab === 'leaves' ? 'bg-white text-slate-900 shadow-md' : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                >
+                    Licenças & Férias
+                </button>
+            </div>
+
+            {/* Tab: Employees */}
+            {currentTab === 'employees' && (
+                <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-xl shadow-slate-200/20 overflow-hidden">
+                    <div className="p-8 border-b border-gray-50 flex flex-col md:flex-row justify-between items-center gap-4 bg-gray-50/30">
+                        <h3 className="font-black text-slate-900 uppercase text-xs tracking-[0.2em]">Diretório de Colaboradores</h3>
+                        <div className="relative w-full md:w-72">
+                            <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                            <input
+                                type="text"
+                                placeholder="Procurar nome ou cargo..."
+                                className="pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none w-full transition-shadow shadow-sm"
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead className="bg-gray-50/50 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">
+                                <tr>
+                                    <th className="px-8 py-5">Colaborador</th>
+                                    <th className="px-8 py-5">Identificação</th>
+                                    <th className="px-8 py-5">Cargo</th>
+                                    <th className="px-8 py-5">Salário Base</th>
+                                    <th className="px-8 py-5">Estado</th>
+                                    <th className="px-8 py-5 text-right">Ações Rápidas</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50 text-sm">
+                                {filteredEmployees.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} className="px-8 py-12 text-center text-slate-400 font-medium">
+                                            Nenhum colaborador encontrado.
+                                        </td>
+                                    </tr>
+                                ) : filteredEmployees.map(emp => (
+                                    <tr key={emp.id} className="hover:bg-indigo-50/20 transition-colors">
+                                        <td className="px-8 py-5">
+                                            <div className="flex items-center space-x-3">
+                                                <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-black text-xs uppercase">
+                                                    {emp.full_name.substring(0, 2)}
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-slate-800">{emp.full_name}</p>
+                                                    <p className="text-xs text-slate-400 font-medium">{emp.contact_email || emp.contact_phone || 'Sem contacto'}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-5 text-slate-600 font-medium">{emp.id_card || 'N/A'}</td>
+                                        <td className="px-8 py-5 text-slate-600 font-bold">{emp.role}</td>
+                                        <td className="px-8 py-5 text-slate-600 font-medium">
+                                            KZ {emp.base_salary.toLocaleString('pt-PT', { minimumFractionDigits: 2 })}
+                                        </td>
+                                        <td className="px-8 py-5">
+                                            <select
+                                                value={emp.status}
+                                                onChange={e => updateStatus(emp.id, e.target.value)}
+                                                className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer appearance-none border-0 ${emp.status === 'active' ? 'bg-emerald-50 text-emerald-600' :
+                                                    emp.status === 'on_leave' ? 'bg-amber-50 text-amber-600' :
+                                                        'bg-rose-50 text-rose-600'
+                                                    }`}
+                                            >
+                                                <option value="active">Ativo</option>
+                                                <option value="on_leave">Férias/Licença</option>
+                                                <option value="inactive">Inativo</option>
+                                            </select>
+                                        </td>
+                                        <td className="px-8 py-5 text-right">
+                                            <div className="flex items-center justify-end space-x-2">
+                                                <button
+                                                    onClick={() => handlePrintReceipt(emp)}
+                                                    title="Gerar Recibo"
+                                                    className="w-8 h-8 rounded-full bg-slate-50 text-slate-600 hover:bg-slate-900 hover:text-white transition-colors flex items-center justify-center font-bold"
+                                                >
+                                                    <i className="fas fa-file-invoice"></i>
+                                                </button>
+                                                <button
+                                                    onClick={() => handleAttendance(emp.id, 'present')}
+                                                    title="Marcar Presença"
+                                                    className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-colors flex items-center justify-center"
+                                                >
+                                                    <i className="fas fa-check"></i>
+                                                </button>
+                                                <button
+                                                    onClick={() => handleAttendance(emp.id, 'absent')}
+                                                    title="Marcar Falta"
+                                                    className="w-8 h-8 rounded-full bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white transition-colors flex items-center justify-center"
+                                                >
+                                                    <i className="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead className="bg-gray-50/50 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">
-                            <tr>
-                                <th className="px-8 py-5">Colaborador</th>
-                                <th className="px-8 py-5">Identificação</th>
-                                <th className="px-8 py-5">Cargo</th>
-                                <th className="px-8 py-5">Salário Base</th>
-                                <th className="px-8 py-5">Estado</th>
-                                <th className="px-8 py-5 text-right">Ponto Rápido</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50 text-sm">
-                            {loading ? (
+            )}
+
+            {/* Tab: Attendance / Controlo de Faltas */}
+            {currentTab === 'attendance' && (
+                <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-xl shadow-slate-200/20 overflow-hidden">
+                    <div className="p-8 border-b border-gray-50 flex flex-col md:flex-row justify-between items-center gap-4 bg-gray-50/30">
+                        <div>
+                            <h3 className="font-black text-slate-900 uppercase text-xs tracking-[0.2em]">Folha de Ponto Diária</h3>
+                            <p className="text-slate-400 text-xs mt-1">Marque presença, falta ou atraso com justificações.</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Data de Registo</label>
+                            <input
+                                type="date"
+                                className="px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-xs font-black text-slate-700 bg-white cursor-pointer"
+                                value={attendanceDate}
+                                onChange={e => setAttendanceDate(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                    
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead className="bg-gray-50/50 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">
                                 <tr>
-                                    <td colSpan={6} className="px-8 py-10 text-center text-slate-400 font-bold animate-pulse">
-                                        A carregar equipa...
-                                    </td>
+                                    <th className="px-8 py-5">Colaborador</th>
+                                    <th className="px-8 py-5">Estado Registado</th>
+                                    <th className="px-8 py-5">Justificação / Nota</th>
+                                    <th className="px-8 py-5 text-right">Ação de Registo</th>
                                 </tr>
-                            ) : filteredEmployees.length === 0 ? (
-                                <tr>
-                                    <td colSpan={6} className="px-8 py-12 text-center text-slate-400 font-medium">
-                                        <div className="text-4xl mb-4"><i className="fas fa-folder-open text-slate-200"></i></div>
-                                        Nenhum colaborador encontrado nesta empresa.
-                                    </td>
-                                </tr>
-                            ) : filteredEmployees.map(emp => (
-                                <tr key={emp.id} className="hover:bg-indigo-50/20 transition-colors">
-                                    <td className="px-8 py-5">
-                                        <div className="flex items-center space-x-3">
-                                            <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-black text-xs uppercase">
-                                                {emp.full_name.substring(0, 2)}
-                                            </div>
-                                            <div>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50 text-sm">
+                                {employees.map(emp => {
+                                    const log = attendanceLogs.find(l => l.employee_id === emp.id);
+                                    return (
+                                        <tr key={emp.id} className="hover:bg-indigo-50/20 transition-colors">
+                                            <td className="px-8 py-5">
                                                 <p className="font-bold text-slate-800">{emp.full_name}</p>
-                                                <p className="text-xs text-slate-400 font-medium">{emp.contact_email || emp.contact_phone || 'Sem contacto'}</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-8 py-5 text-slate-600 font-medium">{emp.id_card || 'N/A'}</td>
-                                    <td className="px-8 py-5 text-slate-600 font-bold">{emp.role}</td>
-                                    <td className="px-8 py-5 text-slate-600 font-medium">
-                                        KZ {emp.base_salary.toLocaleString('pt-PT', { minimumFractionDigits: 2 })}
-                                    </td>
-                                    <td className="px-8 py-5">
-                                        <select
-                                            value={emp.status}
-                                            onChange={e => updateStatus(emp.id, e.target.value)}
-                                            className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer appearance-none border-0 ${emp.status === 'active' ? 'bg-emerald-50 text-emerald-600' :
-                                                emp.status === 'on_leave' ? 'bg-amber-50 text-amber-600' :
-                                                    'bg-rose-50 text-rose-600'
-                                                }`}
-                                        >
-                                            <option value="active">Ativo</option>
-                                            <option value="on_leave">Férias/Licença</option>
-                                            <option value="inactive">Inativo</option>
-                                        </select>
-                                    </td>
-                                    <td className="px-8 py-5 text-right">
-                                        <div className="flex items-center justify-end space-x-2">
-                                            <button
-                                                onClick={() => handlePrintReceipt(emp)}
-                                                title="Gerar Recibo"
-                                                className="w-8 h-8 rounded-full bg-slate-50 text-slate-600 hover:bg-slate-900 hover:text-white transition-colors flex items-center justify-center font-bold"
-                                            >
-                                                <i className="fas fa-file-invoice"></i>
-                                            </button>
-                                            <button
-                                                onClick={() => handleAttendance(emp.id, 'present')}
-                                                title="Marcar Presença"
-                                                className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-colors flex items-center justify-center"
-                                            >
-                                                <i className="fas fa-check"></i>
-                                            </button>
-                                            <button
-                                                onClick={() => handleAttendance(emp.id, 'absent')}
-                                                title="Marcar Falta"
-                                                className="w-8 h-8 rounded-full bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white transition-colors flex items-center justify-center"
-                                            >
-                                                <i className="fas fa-times"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                                                <p className="text-xs text-slate-400">{emp.role}</p>
+                                            </td>
+                                            <td className="px-8 py-5">
+                                                {log ? (
+                                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                                                        log.status === 'present' ? 'bg-emerald-50 text-emerald-600' :
+                                                        log.status === 'absent' ? 'bg-rose-50 text-rose-600' :
+                                                        log.status === 'late' ? 'bg-amber-50 text-amber-600' :
+                                                        'bg-slate-50 text-slate-500'
+                                                    }`}>
+                                                        {log.status === 'present' ? 'Presente' :
+                                                         log.status === 'absent' ? 'Falta' :
+                                                         log.status === 'late' ? 'Atraso' : 'Em Licença'}
+                                                    </span>
+                                                ) : (
+                                                    <span className="bg-gray-50 text-gray-400 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
+                                                        Não Registado
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td className="px-8 py-5">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Adicionar justificação de falta..."
+                                                    className="w-full max-w-sm px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 outline-none font-medium"
+                                                    value={attendanceNotes[emp.id] ?? log?.notes ?? ''}
+                                                    onChange={e => setAttendanceNotes({ ...attendanceNotes, [emp.id]: e.target.value })}
+                                                />
+                                            </td>
+                                            <td className="px-8 py-5 text-right">
+                                                <div className="flex items-center justify-end space-x-1.5">
+                                                    <button
+                                                        onClick={() => handleAttendance(emp.id, 'present')}
+                                                        className="px-3 py-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-xl text-xs font-black uppercase transition-all"
+                                                    >
+                                                        Presente
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleAttendance(emp.id, 'absent')}
+                                                        className="px-3 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white rounded-xl text-xs font-black uppercase transition-all"
+                                                    >
+                                                        Falta
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleAttendance(emp.id, 'late')}
+                                                        className="px-3 py-1.5 bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white rounded-xl text-xs font-black uppercase transition-all"
+                                                    >
+                                                        Atraso
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
+            )}
 
-            {/* Modal de Registo */}
+            {/* Tab: Leaves / Férias e Licenças */}
+            {currentTab === 'leaves' && (
+                <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-xl shadow-slate-200/20 overflow-hidden">
+                    <div className="p-8 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
+                        <div>
+                            <h3 className="font-black text-slate-900 uppercase text-xs tracking-[0.2em]">Férias & Licenças</h3>
+                            <p className="text-slate-400 text-xs mt-1">Gira e autorize férias ou licenças médicas da equipa.</p>
+                        </div>
+                        <button
+                            onClick={() => setShowLeaveModal(true)}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-md active:scale-95 transition-all flex items-center gap-2"
+                        >
+                            <i className="fas fa-calendar-plus"></i>
+                            Solicitar Licença
+                        </button>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead className="bg-gray-50/50 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">
+                                <tr>
+                                    <th className="px-8 py-5">Colaborador</th>
+                                    <th className="px-8 py-5">Tipo</th>
+                                    <th className="px-8 py-5">Início</th>
+                                    <th className="px-8 py-5">Fim</th>
+                                    <th className="px-8 py-5">Razão / Notas</th>
+                                    <th className="px-8 py-5">Estado</th>
+                                    <th className="px-8 py-5 text-right">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50 text-sm">
+                                {leaveRequests.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={7} className="px-8 py-12 text-center text-slate-400 font-medium">
+                                            Nenhuma solicitação registada.
+                                        </td>
+                                    </tr>
+                                ) : leaveRequests.map(req => (
+                                    <tr key={req.id} className="hover:bg-indigo-50/20 transition-colors">
+                                        <td className="px-8 py-5 font-bold text-slate-800">
+                                            {req.employees?.full_name || 'Funcionário'}
+                                        </td>
+                                        <td className="px-8 py-5 font-medium text-slate-600">
+                                            {req.leave_type === 'vacation' ? 'Férias' :
+                                             req.leave_type === 'sick' ? 'Doença / Baixa' :
+                                             req.leave_type === 'parental' ? 'Parental' : 'Outra'}
+                                        </td>
+                                        <td className="px-8 py-5 text-slate-500 font-mono text-xs">{req.start_date}</td>
+                                        <td className="px-8 py-5 text-slate-500 font-mono text-xs">{req.end_date}</td>
+                                        <td className="px-8 py-5 text-slate-600 font-medium italic">{req.reason || 'N/A'}</td>
+                                        <td className="px-8 py-5">
+                                            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                                                req.status === 'approved' ? 'bg-emerald-50 text-emerald-600' :
+                                                req.status === 'rejected' ? 'bg-rose-50 text-rose-600' :
+                                                'bg-amber-50 text-amber-600'
+                                            }`}>
+                                                {req.status === 'approved' ? 'Aprovado' :
+                                                 req.status === 'rejected' ? 'Rejeitado' : 'Pendente'}
+                                            </span>
+                                        </td>
+                                        <td className="px-8 py-5 text-right">
+                                            {req.status === 'pending' && (
+                                                <div className="flex items-center justify-end space-x-1.5">
+                                                    <button
+                                                        onClick={() => handleApproveLeave(req)}
+                                                        className="px-3 py-1.5 bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase shadow-sm hover:bg-emerald-700 transition-all"
+                                                    >
+                                                        Aprovar
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleRejectLeave(req.id)}
+                                                        className="px-3 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white rounded-xl text-[10px] font-black uppercase transition-all"
+                                                    >
+                                                        Rejeitar
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal: Add Employee (Existente) */}
             {showAddModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
                     <form onSubmit={handleAddSubmit} className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -477,7 +816,98 @@ const HRManagement: React.FC = () => {
                 </div>
             )}
 
-            {/* Modal de Calculadora IRT */}
+            {/* Modal: Solicitar Licença (Novo) */}
+            {showLeaveModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <form onSubmit={handleCreateLeave} className="bg-white w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-slate-50">
+                            <div>
+                                <h3 className="text-xl font-black text-slate-900 tracking-tight">Nova Solicitação de Licença</h3>
+                                <p className="text-slate-500 text-sm">Registe um pedido de ausência de longa duração.</p>
+                            </div>
+                            <button type="button" onClick={() => setShowLeaveModal(false)} className="text-slate-400 hover:text-slate-900 transition-colors">
+                                <i className="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-8 space-y-6">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Colaborador *</label>
+                                <select
+                                    required
+                                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                                    value={leaveForm.employee_id}
+                                    onChange={e => setLeaveForm({ ...leaveForm, employee_id: e.target.value })}
+                                >
+                                    <option value="">Selecionar Colaborador...</option>
+                                    {employees.map(emp => (
+                                        <option key={emp.id} value={emp.id}>{emp.full_name}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Tipo de Licença *</label>
+                                <select
+                                    required
+                                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                                    value={leaveForm.leave_type}
+                                    onChange={e => setLeaveForm({ ...leaveForm, leave_type: e.target.value })}
+                                >
+                                    <option value="vacation">Férias</option>
+                                    <option value="sick">Doença / Baixa Médica</option>
+                                    <option value="parental">Licença Parental</option>
+                                    <option value="other">Outra</option>
+                                </select>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Data de Início *</label>
+                                    <input
+                                        required
+                                        type="date"
+                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                                        value={leaveForm.start_date}
+                                        onChange={e => setLeaveForm({ ...leaveForm, start_date: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Data de Fim *</label>
+                                    <input
+                                        required
+                                        type="date"
+                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                                        value={leaveForm.end_date}
+                                        onChange={e => setLeaveForm({ ...leaveForm, end_date: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Motivo / Notas</label>
+                                <textarea
+                                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm min-h-24 resize-none"
+                                    placeholder="Descreva o motivo da solicitação..."
+                                    value={leaveForm.reason}
+                                    onChange={e => setLeaveForm({ ...leaveForm, reason: e.target.value })}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+                            <button type="button" onClick={() => setShowLeaveModal(false)} className="px-6 py-3 rounded-xl font-bold text-slate-600 hover:bg-slate-200 transition-colors">
+                                Cancelar
+                            </button>
+                            <button type="submit" className="px-8 py-3 rounded-xl font-black text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all">
+                                Submeter Pedido
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            )}
+
+            {/* Modal: Calculadora IRT (Existente) */}
             {showCalculatorModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
                     <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden">

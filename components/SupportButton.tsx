@@ -7,7 +7,7 @@ const SupportButton: React.FC = () => {
     // Configurações do suporte
     const WHATSAPP_NUMBER = '244900000000'; // Número de exemplo (Angola)
     const companyName = tenantStatus?.company_name || 'Nova Empresa';
-    const nif = tenantStatus?.nif || 'N/D';
+    const nif = tenantStatus?.tax_id || 'N/D';
 
     const message = `Olá, preciso de suporte no HR-GESTPRO 2.0!\n\n🏢 Empresa: ${companyName}\n🆔 NIF: ${nif}`;
     const encodedMessage = encodeURIComponent(message);

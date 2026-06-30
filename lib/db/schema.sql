@@ -45,6 +45,9 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     full_name TEXT,
     email TEXT,
     can_close_sales INTEGER DEFAULT 0,
+    -- Campos de autenticação offline segura (v2.2.3)
+    password_hash TEXT,
+    password_salt TEXT,
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now')),
     sync_status TEXT DEFAULT 'synced'
@@ -380,6 +383,26 @@ CREATE TABLE IF NOT EXISTS sync_queue (
 );
 
 CREATE INDEX IF NOT EXISTS idx_sync_queue_timestamp ON sync_queue(timestamp);
+
+-- ==============================================================================
+-- TABELA: leave_requests (FÉRIAS E LICENÇAS)
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS leave_requests (
+    id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+    tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    employee_id TEXT NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    leave_type TEXT NOT NULL CHECK(leave_type IN ('vacation','sick','parental','other')),
+    start_date TEXT NOT NULL,
+    end_date TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','approved','rejected')),
+    reason TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now')),
+    sync_status TEXT DEFAULT 'synced'
+);
+
+CREATE INDEX IF NOT EXISTS idx_leave_requests_employee ON leave_requests(employee_id);
+CREATE INDEX IF NOT EXISTS idx_leave_requests_tenant ON leave_requests(tenant_id);
 
 -- ==============================================================================
 -- CONFIGURAÇÕES DO SISTEMA

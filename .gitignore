@@ -32,8 +32,19 @@ get_git.ps1
 run_npm.js
 install_deps.js
 
+# Test artifacts
+playwright-report/
+test-results/
+
 # Databases locais e logs de runtime
 *.db
 *_log.txt
 *.log
+
+# Cópia de segurança antiga (versão 2.0.0) - substituída pela versão 2.2.2
+teste/
+
+# Windows reserved device names
+nul
+NUL
 

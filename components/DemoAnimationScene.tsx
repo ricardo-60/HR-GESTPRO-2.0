@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import Dashboard from './Dashboard';
+import Dashboard from '../pages/Dashboard';
 import SalesManagement from '../pages/SalesManagement';
 import StockManagement from '../pages/StockManagement';
 

@@ -9,7 +9,7 @@ interface State {
   error: Error | null;
 }
 
-export class ErrorBoundary extends Component<Props, State> {
+export class ErrorBoundary extends React.Component<Props, State> {
   public state: State = {
     hasError: false,
     error: null
@@ -52,14 +52,16 @@ export class ErrorBoundary extends Component<Props, State> {
           {this.state.error && (
             <div className="mt-8 p-4 bg-slate-950/80 dark:bg-slate-950 rounded-2xl max-w-lg w-full text-left border border-slate-900 overflow-x-auto">
               <p className="text-[10px] font-bold text-rose-400 font-mono">Detalhes do Erro:</p>
-              <pre className="text-[10px] font-mono text-slate-500 mt-2 whitespace-pre-wrap">{this.state.error.stack || this.state.error.message}</pre>
+              <pre className="text-[10px] font-mono text-slate-500 mt-2 whitespace-pre-wrap">
+                {String(this.state.error?.stack || this.state.error?.message || this.state.error)}
+              </pre>
             </div>
           )}
         </div>
       );
     }
 
-    return this.props.children;
+    return this.props.children as React.ReactElement;
   }
 }
 

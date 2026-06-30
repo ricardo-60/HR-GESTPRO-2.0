@@ -5,8 +5,10 @@ import {
 } from 'lucide-react';
 import { generateSaftAO, downloadSaftXml, validateSaftData, SaftPeriod, SaftValidationIssue } from '../lib/SaftGenerator';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../AuthContext';
 
 export default function SaftExport() {
+    const { tenantId } = useAuth();
     const currentDate = new Date();
     const [year, setYear] = useState(currentDate.getFullYear());
     const [month, setMonth] = useState(currentDate.getMonth()); // 0-indexed → usamos +1
@@ -29,12 +31,8 @@ export default function SaftExport() {
         setSuccess(false);
         setError(null);
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error('Sessão expirada.');
-            const { data: profile } = await supabase
-                .from('user_profiles').select('tenant_id').eq('id', user.id).single();
-            if (!profile) throw new Error('Perfil não encontrado.');
-            const found = await validateSaftData(profile.tenant_id, period);
+            if (!tenantId) throw new Error('Tenant não encontrado.');
+            const found = await validateSaftData(tenantId, period);
             setIssues(found);
         } catch (e: any) {
             setError(e.message);
@@ -48,12 +46,8 @@ export default function SaftExport() {
         setSuccess(false);
         setError(null);
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error('Sessão expirada.');
-            const { data: profile } = await supabase
-                .from('user_profiles').select('tenant_id').eq('id', user.id).single();
-            if (!profile) throw new Error('Perfil não encontrado.');
-            const xml = await generateSaftAO(profile.tenant_id, period);
+            if (!tenantId) throw new Error('Tenant não encontrado.');
+            const xml = await generateSaftAO(tenantId, period);
             downloadSaftXml(xml, period);
             setSuccess(true);
         } catch (e: any) {

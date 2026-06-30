@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { KeyRound, Download, ShieldCheck, AlertCircle, Loader2, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { generateRSAKeyPair, downloadPemFile, AgtKeyPair } from '../lib/agtSigner';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../AuthContext';
 
 export default function KeyManagement() {
+    const { tenantId } = useAuth();
     const [isGenerating, setIsGenerating] = useState(false);
     const [newKeyPair, setNewKeyPair] = useState<AgtKeyPair | null>(null);
     const [existingKey, setExistingKey] = useState<{ key_name: string; created_at: string; public_key: string } | null>(null);
@@ -45,19 +47,15 @@ export default function KeyManagement() {
         if (!newKeyPair) return;
         setError(null);
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error('Sessão expirada.');
-            const { data: profile } = await supabase
-                .from('user_profiles').select('tenant_id').eq('id', user.id).single();
-            if (!profile) throw new Error('Perfil não encontrado.');
+            if (!tenantId) throw new Error('Tenant não encontrado.');
 
             // Desativar chave anterior
             await supabase.from('agt_keys').update({ is_active: false })
-                .eq('tenant_id', profile.tenant_id);
+                .eq('tenant_id', tenantId);
 
             // Guardar nova chave pública
             const { error: insertError } = await supabase.from('agt_keys').insert({
-                tenant_id: profile.tenant_id,
+                tenant_id: tenantId,
                 public_key: newKeyPair.publicKeyBase64,
                 key_name: `Chave RSA-2048 — ${new Date().toLocaleDateString('pt-PT')}`,
                 is_active: true,

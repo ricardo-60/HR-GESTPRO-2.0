@@ -97,7 +97,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPath, onNavigate }) =>
                 <p className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-tighter mt-1">{profile?.role}</p>
               </div>
               <div className="w-10 h-10 bg-gray-100 dark:bg-slate-800 rounded-full border border-gray-200 dark:border-slate-750 flex items-center justify-center text-gray-500 dark:text-slate-400 font-bold overflow-hidden">
-                {user?.email?.charAt(0).toUpperCase()}
+                {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
               </div>
             </div>
           </div>

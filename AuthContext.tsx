@@ -53,7 +53,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (pData?.tenant_id) {
         const { data: tData, error: tErr } = await supabase
           .from('tenants')
-          .select('id, company_name, status, trial_end_date, license_expires_at, plan_type, tax_regime, allow_negative_stock')
+          .select('id, company_name, status, trial_end_date, license_expires_at, plan_type, tax_regime, allow_negative_stock, tax_id, address, phone, logo_url')
           .eq('id', pData.tenant_id)
           .maybeSingle();
 
@@ -75,6 +75,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
           }
 
+          const hasIva = tData.tax_regime === 'General';
           setTenantStatus({
             tenant_id: tData.id,
             company_name: tData.company_name,
@@ -83,7 +84,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             license_expires_at: tData.license_expires_at,
             plan_type: tData.plan_type,
             tax_regime: tData.tax_regime as any,
-            allow_negative_stock: tData.allow_negative_stock
+            allow_negative_stock: tData.allow_negative_stock,
+            is_iva_enabled: hasIva,
+            tax_id: tData.tax_id || '',
+            address: tData.address || '',
+            phone: tData.phone || '',
+            logo_url: tData.logo_url || ''
           });
         } else {
           setTenantStatus(null);
@@ -102,16 +108,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const init = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          setUser(session.user);
-          // Forçamos a espera pelo perfil antes de libertar o loading
-          await fetchData(session.user.id);
+        setLoading(true);
+        const response = await supabase.auth.getSession();
+        if (response && response.data && response.data.session) {
+          const session = response.data.session;
+          if (session?.user) {
+            setUser(session.user);
+            await fetchData(session.user.id);
+          }
         }
       } catch (e) {
-        console.error('Session Init Error', e);
+        console.error('Session Init Error - CRITICAL UI AVOIDANCE:', e);
+        setError('Erro crítico ao carregar autenticação. Por favor, tente recarregar a página.');
       } finally {
-        // Garantimos um pequeno delay para que o React processe os estados
         setLoading(false);
       }
     };
@@ -139,7 +148,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     });
 
-    return () => authListener.subscription.unsubscribe();
+    return () => {
+      if (authListener && authListener.subscription) {
+        authListener.subscription.unsubscribe();
+      }
+    };
   }, []);
 
   const signOut = async () => {

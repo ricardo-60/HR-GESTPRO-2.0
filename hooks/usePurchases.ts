@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { dataLayer as supabase } from '../lib/dataLayer';
 import { PurchaseOrder, PurchaseItem, Product } from '../types';
+import { useAuth } from '../AuthContext';
 
 export function usePurchases() {
+    const { tenantId } = useAuth();
     const [orders, setOrders] = useState<PurchaseOrder[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -34,8 +36,7 @@ export function usePurchases() {
         items: { productId: string, quantity: number, costPrice: number }[]
     ) {
         try {
-            const { data: profile } = await supabase.from('user_profiles').select('tenant_id').single();
-            if (!profile) throw new Error('Tenant não encontrado');
+            if (!tenantId) throw new Error('Tenant não encontrado no contexto');
 
             // 1. Criar a Ordem em 'draft'
             const totalAmount = items.reduce((acc, item) => acc + (item.quantity * item.costPrice), 0);
@@ -43,7 +44,7 @@ export function usePurchases() {
             const { data: order, error: orderError } = await supabase
                 .from('purchase_orders')
                 .insert([{
-                    tenant_id: profile.tenant_id,
+                    tenant_id: tenantId,
                     supplier_id: supplierId,
                     order_no: orderNo,
                     total_amount: totalAmount,

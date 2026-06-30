@@ -4,6 +4,7 @@
  */
 import { supabase } from './supabase';
 import { localQuery, localExecute } from './db/localDB';
+import { createPasswordHash, verifyPassword, generateOfflineSessionToken } from './authHash';
 
 // Estado global de conectividade
 let onlineStatus = typeof navigator !== 'undefined' ? navigator.onLine : true;
@@ -62,7 +63,7 @@ async function ensureSyncQueueTable() {
 // Classe que emula o PostgrestQueryBuilder do Supabase
 class HybridQueryBuilder {
   private tableName: string;
-  private method: 'select' | 'insert' | 'update' | 'delete' = 'select';
+  private method: 'select' | 'insert' | 'update' | 'delete' | 'upsert' = 'select';
   private selectFields: string = '*';
   private filters: Array<{ type: string; column: string; value: any }> = [];
   private orderFields: Array<{ column: string; ascending: boolean }> = [];
@@ -142,8 +143,19 @@ class HybridQueryBuilder {
     return this;
   }
 
+  maybeSingle() {
+    this.isSingle = true;
+    return this;
+  }
+
   insert(data: any) {
     this.method = 'insert';
+    this.writeData = data;
+    return this;
+  }
+
+  upsert(data: any, options?: any) {
+    this.method = 'upsert';
     this.writeData = data;
     return this;
   }
@@ -174,9 +186,27 @@ class HybridQueryBuilder {
   private async execute() {
     if (isOnline() && supabase) {
       try {
-        return await this.executeSupabase();
+        const res = await this.executeSupabase();
+        if (res.error) {
+          const errMsg = res.error.message?.toLowerCase() || '';
+          const isNetworkError = 
+            errMsg.includes('fetch') || 
+            errMsg.includes('network') || 
+            errMsg.includes('failed to fetch') ||
+            errMsg.includes('load failed') ||
+            res.error.status === 0 ||
+            res.error.status === 502 ||
+            res.error.status === 503 ||
+            res.error.status === 504;
+          
+          if (isNetworkError) {
+            console.warn(`[DataLayer] Erro de rede detectado no Supabase (${res.error.message}). Fazendo fallback para SQLite local...`);
+            return await this.executeLocal();
+          }
+        }
+        return res;
       } catch (err) {
-        console.warn(`[DataLayer] Supabase falhou, tentando fallback local:`, err);
+        console.warn(`[DataLayer] Supabase falhou criticamente, tentando fallback local:`, err);
         return await this.executeLocal();
       }
     } else {
@@ -285,7 +315,31 @@ class HybridQueryBuilder {
   }
 
   private async executeLocalSelect() {
-    let sql = `SELECT ${this.selectFields} FROM ${this.tableName}`;
+    let cleanedSelectFields = this.selectFields;
+    const relationsToFetch: Array<{ relationName: string; fields: string[] }> = [];
+
+    // Detectar padrões como: "*, suppliers(name)" ou "products(average_cost)"
+    const relationRegex = /(\w+)\(([^)]+)\)/g;
+    let match;
+    while ((match = relationRegex.exec(this.selectFields)) !== null) {
+      const relationName = match[1];
+      const fields = match[2].split(',').map(f => f.trim());
+      relationsToFetch.push({ relationName, fields });
+      cleanedSelectFields = cleanedSelectFields.replace(match[0], '');
+    }
+
+    // Limpar vírgulas remanescentes no início, fim ou duplicadas
+    cleanedSelectFields = cleanedSelectFields
+      .split(',')
+      .map(f => f.trim())
+      .filter(f => f.length > 0)
+      .join(', ');
+
+    if (!cleanedSelectFields) {
+      cleanedSelectFields = '*';
+    }
+
+    let sql = `SELECT ${cleanedSelectFields} FROM ${this.tableName}`;
     const params: any[] = [];
     
     // Aplicar filtros
@@ -338,6 +392,33 @@ class HybridQueryBuilder {
 
     const rows = await localQuery(sql, params);
     
+    // Buscar dados das relações
+    if (rows && rows.length > 0 && relationsToFetch.length > 0) {
+      for (const row of rows) {
+        for (const rel of relationsToFetch) {
+          let fkName = '';
+          const singularRelation = rel.relationName.endsWith('s') ? rel.relationName.slice(0, -1) : rel.relationName;
+          
+          if (row[`${singularRelation}_id`] !== undefined) fkName = `${singularRelation}_id`;
+          else if (row[`${rel.relationName}_id`] !== undefined) fkName = `${rel.relationName}_id`;
+          else if (row[`${singularRelation}Id`] !== undefined) fkName = `${singularRelation}Id`;
+          
+          if (fkName && row[fkName]) {
+            const relSql = `SELECT ${rel.fields.join(', ')} FROM ${rel.relationName} WHERE id = ?`;
+            try {
+              const relRows = await localQuery(relSql, [row[fkName]]);
+              row[rel.relationName] = relRows[0] || null;
+            } catch (err) {
+              console.warn(`[DataLayer] Falha ao buscar relação ${rel.relationName}:`, err);
+              row[rel.relationName] = null;
+            }
+          } else {
+            row[rel.relationName] = null;
+          }
+        }
+      }
+    }
+    
     if (this.isSingle) {
       return { data: rows[0] || null, error: null };
     }
@@ -347,7 +428,7 @@ class HybridQueryBuilder {
   private async executeLocalWrite() {
     const timestamp = Date.now();
     
-    if (this.method === 'insert') {
+    if (this.method === 'insert' || this.method === 'upsert') {
       const rows = Array.isArray(this.writeData) ? this.writeData : [this.writeData];
       const insertedRows: any[] = [];
 
@@ -357,6 +438,19 @@ class HybridQueryBuilder {
           row.id = crypto.randomUUID ? crypto.randomUUID() : `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         }
         
+        // Assegurar tenant_id caso falte
+        if (!row.tenant_id) {
+          try {
+            const authRes = await dataLayer.auth.getSession();
+            if (authRes.data?.session?.user?.id) {
+              const profiles = await localQuery('SELECT tenant_id FROM user_profiles WHERE id = ?', [authRes.data.session.user.id]);
+              if (profiles && profiles.length > 0 && profiles[0].tenant_id) {
+                row.tenant_id = profiles[0].tenant_id;
+              }
+            }
+          } catch(e) {}
+        }
+
         row.sync_status = 'pending';
         row.updated_at = new Date().toISOString();
 
@@ -510,6 +604,12 @@ export const dataLayer = {
 
   // Proxies para a autenticação offline/online
   auth: {
+    async getUser() {
+      if (isOnline() && supabase) {
+        return await supabase.auth.getUser();
+      }
+      return { data: { user: null }, error: null };
+    },
     async getSession() {
       if (isOnline() && supabase) {
         return await supabase.auth.getSession();
@@ -532,9 +632,40 @@ export const dataLayer = {
           // Replicar o utilizador para a tabela local de utilizadores
           const profile = await supabase.from('user_profiles').select('*').eq('id', res.data.session.user.id).single();
           if (profile.data) {
+            // Derivar e armazenar hash da password para login offline futuro
+            let pwHash: string | null = null;
+            let pwSalt: string | null = null;
+            try {
+              const hashResult = await createPasswordHash(credentials.password);
+              pwHash = hashResult.hash;
+              pwSalt = hashResult.salt;
+              console.log('[AuthHash] Hash offline armazenado com segurança para:', credentials.email);
+            } catch (hashErr) {
+              console.warn('[AuthHash] Falha ao gerar hash offline (não crítico):', hashErr);
+              // Não bloqueia o login se o hash falhar
+            }
+
+            // Migração: garantir colunas de hash existem (bases SQLite criadas antes da v2.2.3)
+            try {
+              await localExecute(`ALTER TABLE user_profiles ADD COLUMN password_hash TEXT`);
+              await localExecute(`ALTER TABLE user_profiles ADD COLUMN password_salt TEXT`);
+            } catch (_migrateErr) {
+              // Colunas já existem — ignorar erro do ALTER TABLE
+            }
+
             await localExecute(
-              `INSERT OR REPLACE INTO user_profiles (id, tenant_id, role, full_name, email, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-              [profile.data.id, profile.data.tenant_id, profile.data.role, profile.data.full_name, profile.data.email, profile.data.created_at, profile.data.updated_at]
+              `INSERT OR REPLACE INTO user_profiles (id, tenant_id, role, full_name, email, password_hash, password_salt, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              [
+                profile.data.id,
+                profile.data.tenant_id,
+                profile.data.role,
+                profile.data.full_name,
+                profile.data.email,
+                pwHash,
+                pwSalt,
+                profile.data.created_at,
+                profile.data.updated_at
+              ]
             );
             
             // Gravar também o tenant
@@ -549,27 +680,65 @@ export const dataLayer = {
         }
         return res;
       } else {
-        // Autenticação offline baseada em perfis locais
+        // Autenticação offline SEGURA baseada em hash PBKDF2
         try {
-          const profiles = await localQuery('SELECT * FROM user_profiles WHERE email = ?', [credentials.email]);
+          const profiles = await localQuery(
+            'SELECT id, full_name, email, password_hash, password_salt FROM user_profiles WHERE email = ?',
+            [credentials.email]
+          );
           if (profiles && profiles.length > 0) {
-            // Em modo offline, aceita a credencial baseada na presença do email localmente
-            // ATENÇÃO: Numa app de produção real, far-se-ia um hash básico do pass, mas
-            // como fallback offline local seguro em rede interna, confiamos no perfil local.
+            const profile = profiles[0];
+            
+            // Se o perfil tem hash armazenado, validamos a password
+            if (profile.password_hash && profile.password_salt) {
+              const isValid = await verifyPassword(
+                credentials.password,
+                profile.password_hash,
+                profile.password_salt
+              );
+              
+              if (!isValid) {
+                console.warn('[AuthHash] Tentativa de login offline falhou: password inválida para', credentials.email);
+                return {
+                  data: { session: null, user: null },
+                  error: { message: 'Credenciais inválidas. Verifique o email e a palavra-passe.' }
+                };
+              }
+              
+              console.log('[AuthHash] Login offline validado com sucesso via hash PBKDF2 para:', credentials.email);
+            } else {
+              // Perfil sem hash armazenado — não é possível autenticar offline com segurança
+              console.warn('[AuthHash] Perfil sem hash offline. Login offline negado para:', credentials.email);
+              return {
+                data: { session: null, user: null },
+                error: {
+                  message: 'Autenticação offline não disponível para esta conta. ' +
+                    'Faça login com internet pelo menos uma vez para ativar o acesso offline.'
+                }
+              };
+            }
+
+            // Criar sessão offline apenas após validação bem-sucedida
+            const accessToken = generateOfflineSessionToken();
             const fakeUser = {
-              id: profiles[0].id,
-              email: profiles[0].email,
-              user_metadata: { full_name: profiles[0].full_name },
+              id: profile.id,
+              email: profile.email,
+              user_metadata: { full_name: profile.full_name },
             };
             const fakeSession = {
-              access_token: 'offline_token_' + Date.now(),
+              access_token: accessToken,
               user: fakeUser,
-              expires_at: Math.floor(Date.now() / 1000) + 86400,
+              expires_at: Math.floor(Date.now() / 1000) + 86400, // 24h
             };
             return { data: { session: fakeSession, user: fakeUser }, error: null };
           }
-        } catch (e) {}
-        return { data: { session: null, user: null }, error: { message: 'Incapaz de autenticar offline. Perfil não encontrado localmente.' } };
+        } catch (e) {
+          console.error('[AuthHash] Erro crítico durante login offline:', e);
+        }
+        return {
+          data: { session: null, user: null },
+          error: { message: 'Incapaz de autenticar offline. Perfil não encontrado ou sem credenciais seguras armazenadas.' }
+        };
       }
     },
 
@@ -586,5 +755,8 @@ export const dataLayer = {
       }
       return { data: { subscription: { unsubscribe: () => {} } } };
     }
+  },
+  get storage() {
+    return supabase ? supabase.storage : ({} as any);
   }
 };
